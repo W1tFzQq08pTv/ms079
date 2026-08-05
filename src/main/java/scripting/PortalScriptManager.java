@@ -30,8 +30,6 @@ import javax.script.Compilable;
 import javax.script.CompiledScript;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineFactory;
-import javax.script.ScriptEngineManager;
 
 import client.MapleClient;
 import java.io.*;
@@ -47,7 +45,6 @@ public class PortalScriptManager {
 
     private static final PortalScriptManager instance = new PortalScriptManager();
     private final Map<String, PortalScript> scripts = new HashMap<String, PortalScript>();
-    private final static ScriptEngineFactory sef = new ScriptEngineManager().getEngineByName("javascript").getFactory();
 
     public final static PortalScriptManager getInstance() {
         return instance;
@@ -66,8 +63,9 @@ public class PortalScriptManager {
         }
 
         InputStream fr = null;
-        final ScriptEngine portal = sef.getScriptEngine();
+        final ScriptEngine portal;
         try {
+            portal = AbstractScriptManager.createScriptEngine();
             fr = new FileInputStream(scriptFile);
             BufferedReader bf = new BufferedReader(new InputStreamReader(fr, EncodingDetect.getJavaEncode(scriptFile)));
             CompiledScript compiled = ((Compilable) portal).compile(bf);
@@ -75,6 +73,7 @@ public class PortalScriptManager {
         } catch (final Exception e) {
             LOGGER.error("Error executing Portalscript: " + scriptName + ":" + e);
             FileoutputUtil.log(FileoutputUtil.ScriptEx_Log, "Error executing Portal script. (" + scriptName + ") " + e);
+            return null;
         } finally {
             if (fr != null) {
                 try {

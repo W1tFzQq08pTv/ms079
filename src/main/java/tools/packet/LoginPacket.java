@@ -10,7 +10,7 @@ import constants.GameConstants;
 import constants.ServerConstants;
 import handling.MaplePacket;
 import handling.SendPacketOpcode;
-import handling.login.Balloon;
+import handling.login.handler.Balloon;
 import handling.login.LoginServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

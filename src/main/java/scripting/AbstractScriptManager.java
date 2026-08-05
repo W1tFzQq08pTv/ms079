@@ -27,6 +27,7 @@ import java.io.IOException;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 
 import client.MapleClient;
 import java.io.*;
@@ -45,6 +46,15 @@ public abstract class AbstractScriptManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractScriptManager.class);
 
     private static final ScriptEngineManager sem = new ScriptEngineManager();
+
+    static ScriptEngine createScriptEngine() throws ScriptException {
+        final ScriptEngine engine = sem.getEngineByName("javascript");
+        if (engine == null) {
+            throw new IllegalStateException("JavaScript engine is not available");
+        }
+        engine.eval("load('nashorn:mozilla_compat.js');");
+        return engine;
+    }
 
     protected Invocable getInvocable(String path, MapleClient c) {
         return getInvocable(path, c, false);
@@ -65,7 +75,7 @@ public abstract class AbstractScriptManager {
                 if (!scriptFile.exists()) {
                     return null;
                 }
-                engine = sem.getEngineByName("javascript");
+                engine = createScriptEngine();
 
                 if (c != null) {
                     c.setScriptEngine(path, engine);

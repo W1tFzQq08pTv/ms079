@@ -70,17 +70,16 @@ public class MonsterBook implements Serializable {
     }
 
     public final static MonsterBook loadCards(final int charid) throws SQLException {
-        final PreparedStatement ps = DatabaseConnection.getConnection().prepareStatement("SELECT * FROM monsterbook WHERE charid = ? ORDER BY cardid ASC");
-        ps.setInt(1, charid);
-        final ResultSet rs = ps.executeQuery();
         Map<Integer, Integer> cards = new LinkedHashMap<Integer, Integer>();
-        int cardid, level;
-
-        while (rs.next()) {
-            cards.put(rs.getInt("cardid"), rs.getInt("level"));
+        try (Connection con = DatabaseConnection.getConnection();
+                PreparedStatement ps = con.prepareStatement("SELECT * FROM monsterbook WHERE charid = ? ORDER BY cardid ASC")) {
+            ps.setInt(1, charid);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    cards.put(rs.getInt("cardid"), rs.getInt("level"));
+                }
+            }
         }
-        rs.close();
-        ps.close();
         return new MonsterBook(cards);
     }
 
@@ -88,11 +87,19 @@ public class MonsterBook implements Serializable {
         if (!changed || cards.size() == 0) {
             return;
         }
-        final Connection con = DatabaseConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement("DELETE FROM monsterbook WHERE charid = ?");
-        ps.setInt(1, charid);
-        ps.execute();
-        ps.close();
+        try (Connection con = DatabaseConnection.getConnection()) {
+            saveCards(charid, con);
+        }
+    }
+
+    public final void saveCards(final int charid, final Connection con) throws SQLException {
+        if (!changed || cards.size() == 0) {
+            return;
+        }
+        try (PreparedStatement ps = con.prepareStatement("DELETE FROM monsterbook WHERE charid = ?")) {
+            ps.setInt(1, charid);
+            ps.execute();
+        }
 
         boolean first = true;
         final StringBuilder query = new StringBuilder();
@@ -111,9 +118,9 @@ public class MonsterBook implements Serializable {
             query.append(all.getValue()); // Card level
             query.append(")");
         }
-        ps = con.prepareStatement(query.toString());
-        ps.execute();
-        ps.close();
+        try (PreparedStatement ps = con.prepareStatement(query.toString())) {
+            ps.execute();
+        }
     }
 
     private final void calculateLevel() {

@@ -1,6 +1,26 @@
 ms079
 =====
 
+## Docker 运行服务端
+
+游戏服务端固定使用 Java 8 Docker 镜像运行，不依赖宿主机安装 JDK。启动前需保证名为
+`ms079-mysql` 的 MySQL 5.7 容器已经运行，并已发布 `3306`、`7575-7578`、
+`8600` 和 `9595` 端口。服务端与该数据库容器共享网络命名空间，因此配置中的数据库
+地址和对外游戏地址均可继续使用 `127.0.0.1`。
+
+```powershell
+docker compose up -d --build ms079-server
+docker compose logs -f ms079-server
+```
+
+也可以直接运行 `启动服务端-命令行.bat` 或 `启动服务端-GUI.bat`。停止游戏服务端时执行：
+
+```powershell
+docker compose down
+```
+
+该命令只移除游戏服务端容器，不会移除外部的 `ms079-mysql` 容器或数据库数据卷。
+
 冒险岛 v079 版本，是大巨变前最经典的版本。
 
 ---

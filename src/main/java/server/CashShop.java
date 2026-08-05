@@ -49,6 +49,7 @@ import tools.Pair;
 public class CashShop implements Serializable {
 
     private static final long serialVersionUID = 231541893513373579L;
+    private static final long MILLIS_PER_DAY = 24L * 60L * 60L * 1000L;
     private int accountId, characterId;
     private ItemLoader factory;
     private List<IItem> inventory = new ArrayList<IItem>();
@@ -176,20 +177,17 @@ public class CashShop implements Serializable {
             uniqueid = MapleInventoryIdentifier.getInstance();
         }
         long period = cItem.getPeriod();
-        if (GameConstants.isPet(cItem.getId())) {
+        if (period <= 0 && GameConstants.isPet(cItem.getId())) {
             period = 90;
-        } else if (cItem.getId() >= 5210000 && cItem.getId() <= 5360099 && cItem.getId() != 5220007 && cItem.getId() != 5220008) {
-        } else {
-            period = 0;
         }
+        long expiration = expirationForPeriod(period, System.currentTimeMillis());
         IItem ret = null;
         if (GameConstants.getInventoryType(cItem.getId()) == MapleInventoryType.EQUIP) {
             Equip eq = (Equip) MapleItemInformationProvider.getInstance().getEquipById(cItem.getId());
             eq.setUniqueId(uniqueid);
-            if (GameConstants.isPet(cItem.getId()) || period > 0) {
-                eq.setExpiration((long) (System.currentTimeMillis() + (long) (period * 24 * 60 * 60 * 1000)));
+            if (expiration > 0) {
+                eq.setExpiration(expiration);
             }
-            // eq.setExpiration((long) (System.currentTimeMillis() + (long) (period * 24 * 60 * 60 * 1000)));
             eq.setGiftFrom(gift);
             if (GameConstants.isEffectRing(cItem.getId()) && uniqueid > 0) {
                 MapleRing ring = MapleRing.loadFromDb(uniqueid);
@@ -200,8 +198,8 @@ public class CashShop implements Serializable {
             ret = eq.copy();
         } else {
             Item item = new Item(cItem.getId(), (byte) 0, (short) cItem.getCount(), (byte) 0, uniqueid);
-            if (period > 0) {
-                item.setExpiration((long) (System.currentTimeMillis() + (long) (period * 24 * 60 * 60 * 1000)));
+            if (expiration > 0) {
+                item.setExpiration(expiration);
             }
             if (cItem.getId() == 5211047 || cItem.getId() == 5360014) {
                 item.setExpiration((long) (System.currentTimeMillis() + (long) (3 * 60 * 60 * 1000)));
@@ -220,6 +218,10 @@ public class CashShop implements Serializable {
         return ret;
     }
 
+    static long expirationForPeriod(long periodDays, long currentTimeMillis) {
+        return periodDays > 0 ? currentTimeMillis + periodDays * MILLIS_PER_DAY : -1L;
+    }
+
     public void addToInventory(IItem item) {
         inventory.add(item);
     }
@@ -233,15 +235,14 @@ public class CashShop implements Serializable {
     }
 
     public void gift(int recipient, String from, String message, int sn, int uniqueid) {
-        try {
-            PreparedStatement ps = DatabaseConnection.getConnection().prepareStatement("INSERT INTO `gifts` VALUES (DEFAULT, ?, ?, ?, ?, ?)");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("INSERT INTO `gifts` VALUES (DEFAULT, ?, ?, ?, ?, ?)")) {
             ps.setInt(1, recipient);
             ps.setString(2, from);
             ps.setString(3, message);
             ps.setInt(4, sn);
             ps.setInt(5, uniqueid);
             ps.executeUpdate();
-            ps.close();
         } catch (SQLException sqle) {
             sqle.printStackTrace();
         }
@@ -249,12 +250,10 @@ public class CashShop implements Serializable {
 
     public List<Pair<IItem, String>> loadGifts() {
         List<Pair<IItem, String>> gifts = new ArrayList<Pair<IItem, String>>();
-        Connection con = DatabaseConnection.getConnection();
-        try {
-            PreparedStatement ps = con.prepareStatement("SELECT * FROM `gifts` WHERE `recipient` = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT * FROM `gifts` WHERE `recipient` = ?")) {
             ps.setInt(1, characterId);
-            ResultSet rs = ps.executeQuery();
-
+            try (ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 CashItemInfo cItem = CashItemFactory.getInstance().getItem(rs.getInt("sn"));
                 IItem item = toItem(cItem, rs.getInt("uniqueid"), rs.getString("from"));
@@ -269,13 +268,11 @@ public class CashShop implements Serializable {
                     addToInventory(item);
                 }
             }
-
-            rs.close();
-            ps.close();
-            ps = con.prepareStatement("DELETE FROM `gifts` WHERE `recipient` = ?");
-            ps.setInt(1, characterId);
-            ps.executeUpdate();
-            ps.close();
+            }
+            try (PreparedStatement delete = con.prepareStatement("DELETE FROM `gifts` WHERE `recipient` = ?")) {
+                delete.setInt(1, characterId);
+                delete.executeUpdate();
+            }
             save();
         } catch (SQLException sqle) {
             sqle.printStackTrace();
@@ -306,33 +303,6 @@ public class CashShop implements Serializable {
     }
 
     public IItem toItem(CashItemInfo cItem, MapleCharacter chr, int uniqueid, String gift) {
-        if (uniqueid <= 0) {
-            uniqueid = MapleInventoryIdentifier.getInstance();
-        }
-
-        IItem ret = null;
-        if (GameConstants.getInventoryType(cItem.getId()) == MapleInventoryType.EQUIP) {
-            Equip eq = (Equip) MapleItemInformationProvider.getInstance().getEquipById(cItem.getId());
-            eq.setUniqueId(uniqueid);
-            eq.setGiftFrom(gift);
-            if (GameConstants.isEffectRing(cItem.getId()) && uniqueid > 0) {
-                MapleRing ring = MapleRing.loadFromDb(uniqueid);
-                if (ring != null) {
-                    eq.setRing(ring);
-                }
-            }
-            ret = eq.copy();
-        } else {
-            Item item = new Item(cItem.getId(), (byte) 0, (short) cItem.getCount(), (byte) 0, uniqueid);
-            item.setGiftFrom(gift);
-            if (GameConstants.isPet(cItem.getId())) {
-                final MaplePet pet = MaplePet.createPet(cItem.getId(), uniqueid);
-                if (pet != null) {
-                    item.setPet(pet);
-                }
-            }
-            ret = item.copy();
-        }
-        return ret;
+        return toItem(cItem, uniqueid, gift);
     }
 }

@@ -1258,24 +1258,22 @@ public class MapleClient implements Serializable {
         if (charslots != DEFAULT_CHARSLOT) {
             return charslots; //save a sql
         }
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("SELECT * FROM character_slots WHERE accid = ? AND worldid = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT * FROM character_slots WHERE accid = ? AND worldid = ?")) {
             ps.setInt(1, accId);
             ps.setInt(2, world);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                charslots = rs.getInt("charslots");
-            } else {
-                PreparedStatement psu = con.prepareStatement("INSERT INTO character_slots (accid, worldid, charslots) VALUES (?, ?, ?)");
-                psu.setInt(1, accId);
-                psu.setInt(2, world);
-                psu.setInt(3, charslots);
-                psu.executeUpdate();
-                psu.close();
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    charslots = rs.getInt("charslots");
+                } else {
+                    try (PreparedStatement psu = con.prepareStatement("INSERT INTO character_slots (accid, worldid, charslots) VALUES (?, ?, ?)")) {
+                        psu.setInt(1, accId);
+                        psu.setInt(2, world);
+                        psu.setInt(3, charslots);
+                        psu.executeUpdate();
+                    }
+                }
             }
-            rs.close();
-            ps.close();
         } catch (SQLException sqlE) {
             sqlE.printStackTrace();
         }

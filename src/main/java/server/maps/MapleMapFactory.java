@@ -56,7 +56,22 @@ public class MapleMapFactory {
     private static final Map<Integer, MapleNodes> MAP_INFOS_CACHED = new HashMap<>();
     private static final Map<Integer, List<AbstractLoadedMapleLife>> customLife = new HashMap<>();
     private final ReentrantLock lock = new ReentrantLock(true);
+    private final short mobRespawnInterval;
+    private final float mobDensityMultiplier;
     private int channel;
+
+    public MapleMapFactory() {
+        this(9000, 1.0f);
+    }
+
+    public MapleMapFactory(int mobRespawnInterval) {
+        this(mobRespawnInterval, 1.0f);
+    }
+
+    public MapleMapFactory(int mobRespawnInterval, float mobDensityMultiplier) {
+        this.mobRespawnInterval = (short) Math.min(Short.MAX_VALUE, Math.max(3000, mobRespawnInterval));
+        this.mobDensityMultiplier = Math.min(2.0f, Math.max(1.0f, mobDensityMultiplier));
+    }
 
     public final MapleMap getMap(final int mapid) {
         return getMap(mapid, true, true, true);
@@ -84,12 +99,11 @@ public class MapleMapFactory {
                 return cachedMap;
             }
 
-            return WzData.MAP.directory().findFile(getMapName(mapid))
+            return findMapFile(mapid)
                     .map(WzFile::content)
                     .map(element -> element.findByName("info/link")
                             .map(Elements::ofInt)
-                            .map(this::getMapName)
-                            .flatMap(mapName -> WzData.MAP.directory().findFile(mapName))
+                            .flatMap(this::findMapFile)
                             .map(WzFile::content)
                             .orElse(element))
                     .map(element -> createMapleMap(omapid, respawns, npcs, reactors, element))
@@ -173,12 +187,11 @@ public class MapleMapFactory {
             return mapleMap;
         }
 
-        return WzData.MAP.directory().findFile(getMapName(mapid))
+        return findMapFile(mapid)
                 .map(WzFile::content)
                 .map(mapData -> mapData.findByName("info/link")
                         .map(Elements::ofInt)
-                        .map(this::getMapName)
-                        .flatMap(mapName -> WzData.MAP.directory().findFile(mapName))
+                        .flatMap(this::findMapFile)
                         .map(WzFile::content)
                         .orElse(mapData))
                 .map(mapData -> createMapleMap(mapid, respawns, npcs, reactors, mapData))
@@ -192,6 +205,7 @@ public class MapleMapFactory {
         }
         int returnMap = Elements.findInt(mapData, "info/returnMap");
         MapleMap map = new MapleMap(mapid, channel, returnMap, monsterRate);
+        map.setMonsterDensityMultiplier(mobDensityMultiplier);
         PortalFactory portalFactory = new PortalFactory();
         mapData.findByName("portal").map(WzElement::childrenStream)
                 .ifPresent(stream -> stream.forEach(element -> {
@@ -248,8 +262,8 @@ public class MapleMapFactory {
         }
         addAreaBossSpawn(map);
         short createMobInterval = (short) Elements.findInt(mapData, "info/createMobInterval", 9000);
-        map.setCreateMobInterval(createMobInterval);
         map.loadMonsterRate(true);
+        map.setCreateMobInterval((short) Math.min(createMobInterval, mobRespawnInterval));
         map.setNodes(loadNodes(mapid, mapData));
 
         if (reactors) {
@@ -382,9 +396,12 @@ public class MapleMapFactory {
         return myReactor;
     }
 
-    private String getMapName(int mapid) {
+    Optional<WzFile> findMapFile(int mapid) {
         String mapName = Strings.padStart(String.valueOf(mapid), 9, '0');
-        return String.format("Map/Map%s/%s.img", mapid / 100000000, mapName);
+        return WzData.MAP.directory()
+                .findDir("Map")
+                .flatMap(directory -> directory.findDir("Map" + mapid / 100000000))
+                .flatMap(directory -> directory.findFile(mapName));
     }
 
     private String getMapStringName(int mapid) {

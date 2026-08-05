@@ -1,8 +1,4 @@
 var status = 0;
-var job;
-
-importPackage(net.sf.odinms.client);
-
 function start() {
 	status = -1;
 	action(1, 0, 0);
@@ -25,9 +21,8 @@ function action(mode, type, selection) {
 		} else if (status == 1) {
 			cm.sendYesNo("怎么样？你想体验弓手吗？");
 		} else if (status == 2) {
-			cm.lockUI();
 			cm.warp(1020300);
 			cm.dispose();
 		}
 	}
-}	
+}

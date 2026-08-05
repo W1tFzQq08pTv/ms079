@@ -139,21 +139,43 @@ public class PetHandler {
     }
 
     public static final void PetFood(final SeekableLittleEndianAccessor slea, final MapleClient c, final MapleCharacter chr) {
-        if (c.getPlayer().getNoPets() == 0) {
+        if (chr == null) {
             c.getSession().write(MaplePacketCreator.enableActions());
             return;
         }
-        int slot = 0;
-        List<MaplePet> pets = c.getPlayer().getPets();
-        for (MaplePet pet : pets) {
-            if (pet.getFullness() < 100) {
-                slot = c.getPlayer().getPetSlot(pet);
+
+        chr.updateTick(slea.readInt());
+        final short itemSlot = slea.readShort();
+        final int itemId = slea.readInt();
+        final IItem food = chr.getInventory(MapleInventoryType.USE).getItem(itemSlot);
+        if (food == null || food.getQuantity() < 1 || food.getItemId() != itemId) {
+            c.getSession().write(MaplePacketCreator.enableActions());
+            return;
+        }
+
+        MaplePet pet = null;
+        int petIndex = -1;
+        int summonedIndex = 0;
+        for (MaplePet candidate : chr.getPets()) {
+            if (candidate != null && candidate.getSummoned()) {
+                if (pet == null || candidate.getFullness() < pet.getFullness()) {
+                    pet = candidate;
+                    petIndex = summonedIndex;
+                }
+                summonedIndex++;
             }
         }
-        MaplePet pet = c.getPlayer().getPet(slot);
-        slea.readInt();
-        slea.readShort();
-        int itemId = slea.readInt();
+
+        if (pet == null) {
+            c.getSession().write(MaplePacketCreator.enableActions());
+            return;
+        }
+
+        final List<Integer> supportedPets = MapleItemInformationProvider.getInstance().petsCanConsume(itemId);
+        if (!supportedPets.isEmpty() && !supportedPets.contains(pet.getPetItemId())) {
+            c.getSession().write(MaplePacketCreator.enableActions());
+            return;
+        }
 
         boolean gainCloseness = false;
 
@@ -179,7 +201,7 @@ public class PetHandler {
             }
 
             c.getSession().write(PetPacket.updatePet(pet, c.getPlayer().getInventory(MapleInventoryType.CASH).getItem((byte) pet.getInventoryPosition()), true));
-            c.getPlayer().getMap().broadcastMessage(c.getPlayer(), PetPacket.commandResponse(c.getPlayer().getId(), slot, 1, true), true);
+            chr.getMap().broadcastMessage(chr, PetPacket.commandResponse(chr.getId(), petIndex, 1, true), true);
         } else {
             if (gainCloseness) {
                 int newCloseness = pet.getCloseness() - 1;
@@ -192,9 +214,10 @@ public class PetHandler {
                 }
             }
 
-            c.getPlayer().getMap().broadcastMessage(c.getPlayer(), PetPacket.commandResponse(c.getPlayer().getId(), slot, 1, false), true);
+            chr.getMap().broadcastMessage(chr, PetPacket.commandResponse(chr.getId(), petIndex, 1, false), true);
         }
-        MapleInventoryManipulator.removeById(c, MapleInventoryType.USE, itemId, 1, true, false);
+        MapleInventoryManipulator.removeFromSlot(c, MapleInventoryType.USE, itemSlot, (short) 1, false);
+        c.getSession().write(MaplePacketCreator.enableActions());
     }
 
     public static final void MovePet(final SeekableLittleEndianAccessor slea, final MapleCharacter chr) {
@@ -247,7 +270,8 @@ public class PetHandler {
                                 chr.gainMeso(mapitem.getMeso(), true, true);
                             }
                             InventoryHandler.removeItem_Pet(chr, mapitem, slot);
-                        } else if (chr.getStat().hasItem && MapleItemInformationProvider.getInstance().isPickupBlocked(mapitem.getItem().getItemId())) {
+                        } else if (mapitem.getMeso() <= 0 && chr.getStat().hasItem
+                                && !MapleItemInformationProvider.getInstance().isPickupBlocked(mapitem.getItem().getItemId())) {
                             if (InventoryHandler.useItem(chr.getClient(), mapitem.getItemId())) {
                                 InventoryHandler.removeItem_Pet(chr, mapitem, slot);
                             } else if (MapleInventoryManipulator.checkSpace(chr.getClient(), mapitem.getItem().getItemId(), mapitem.getItem().getQuantity(), mapitem.getItem().getOwner())) {

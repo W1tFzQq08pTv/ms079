@@ -1,7 +1,15 @@
 @echo off
 @title MapleStory_079
-set path=%PATH%;JAVA_HOME%\bin;%SystemRoot%\system32;%SystemRoot%
-set JRE_HOME=%JAVA_HOME%\jre
-set CLASSPATH=%CLASSPATH%;./*;./lib/*
-java -server -Dwzpath=wz gui.GUIApplication
+pushd "%~dp0"
+docker compose up -d --build ms079-server
+if errorlevel 1 goto :error
+docker compose ps
+popd
 pause
+exit /b 0
+
+:error
+echo Failed to start the Docker server.
+popd
+pause
+exit /b 1

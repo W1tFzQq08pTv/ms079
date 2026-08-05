@@ -8,3 +8,9 @@ target
 build
 
 /logs
+
+# Runtime output
+/日志/
+/日志*
+/log*Script_Except.log
+/.env

@@ -1,6 +1,7 @@
 package server;
 
 import database.DatabaseConnection;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -46,21 +47,23 @@ public class SpeedRunner {
     }
 
     public final void loadSpeedRunData(SpeedRunType type) throws SQLException {
-        PreparedStatement ps = DatabaseConnection.getConnection().prepareStatement("SELECT * FROM speedruns WHERE type = ? ORDER BY time LIMIT 25", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE); //or should we do less
-        ps.setString(1, type.name());
         StringBuilder ret = new StringBuilder("#rThese are the speedrun times for " + StringUtil.makeEnumHumanReadable(type.name()) + ".#k\r\n\r\n");
         Map<Integer, String> rett = new LinkedHashMap<Integer, String>();
-        ResultSet rs = ps.executeQuery();
-        int rank = 1;
-        boolean cont = rs.first();
-        boolean changed = cont;
-        while (cont) {
-            addSpeedRunData(ret, rett, rs.getString("members"), rs.getString("leader"), rank, rs.getString("timestring"));
-            rank++;
-            cont = rs.next();
+        boolean changed;
+        try (Connection con = DatabaseConnection.getConnection();
+                PreparedStatement ps = con.prepareStatement("SELECT * FROM speedruns WHERE type = ? ORDER BY time LIMIT 25", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+            ps.setString(1, type.name());
+            try (ResultSet rs = ps.executeQuery()) {
+                int rank = 1;
+                boolean cont = rs.first();
+                changed = cont;
+                while (cont) {
+                    addSpeedRunData(ret, rett, rs.getString("members"), rs.getString("leader"), rank, rs.getString("timestring"));
+                    rank++;
+                    cont = rs.next();
+                }
+            }
         }
-        rs.close();
-        ps.close();
         if (changed) {
             speedRunData.put(type, new Pair<String, Map<Integer, String>>(ret.toString(), rett));
         }

@@ -77,13 +77,10 @@ public class InventoryHandler {
             return;
         }
         MapleCharacter player = c.getPlayer();
-        player.setCurrenttime(System.currentTimeMillis());
-        if (player.getCurrenttime() - player.getLasttime() < player.get防止复制时间()) {
-            c.getPlayer().dropMessage(5, "请慢点使用.不然会掉线哟！");
+        if (!player.canMoveItem()) {
             c.getSession().write(MaplePacketCreator.enableActions());
             return;
         }
-        player.setLasttime(System.currentTimeMillis());
         c.getPlayer().updateTick(slea.readInt());
         final MapleInventoryType type = MapleInventoryType.getByType(slea.readByte()); //04
         final short src = slea.readShort();                                            //01 00
@@ -318,7 +315,13 @@ public class InventoryHandler {
             return;
         }
         if (!FieldLimitType.PotionUse.check(chr.getMap().getFieldLimit()) || chr.getMapId() == 610030600) { //cwk quick hack
-            if (MapleItemInformationProvider.getInstance().getItemEffect(toUse.getItemId()).applyTo(chr)) {
+            final MapleStatEffect effect = MapleItemInformationProvider.getInstance().getItemEffect(toUse.getItemId());
+            if (effect == null) {
+                LOGGER.warn("Missing item effect: itemId={}, characterId={}, slot={}", itemId, chr.getId(), slot);
+                c.getSession().write(MaplePacketCreator.enableActions());
+                return;
+            }
+            if (effect.applyTo(chr)) {
                 MapleInventoryManipulator.removeFromSlot(c, MapleInventoryType.USE, slot, (short) 1, false);
                 if (chr.getMap().getConsumeItemCoolTime() > 0) {
                     chr.setNextConsume(time + (chr.getMap().getConsumeItemCoolTime() * 1000));
@@ -345,7 +348,13 @@ public class InventoryHandler {
             return;
         }
         //  if (!FieldLimitType.PotionUse.check(chr.getMap().getFieldLimit())) {
-        if (MapleItemInformationProvider.getInstance().getItemEffect(toUse.getItemId()).applyReturnScroll(chr)) {
+        final MapleStatEffect effect = MapleItemInformationProvider.getInstance().getItemEffect(toUse.getItemId());
+        if (effect == null) {
+            LOGGER.warn("Missing return scroll effect: itemId={}, characterId={}, slot={}", itemId, chr.getId(), slot);
+            c.getSession().write(MaplePacketCreator.enableActions());
+            return;
+        }
+        if (effect.applyReturnScroll(chr)) {
             MapleInventoryManipulator.removeFromSlot(c, MapleInventoryType.USE, slot, (short) 1, false);
         } else {
             c.getSession().write(MaplePacketCreator.enableActions());

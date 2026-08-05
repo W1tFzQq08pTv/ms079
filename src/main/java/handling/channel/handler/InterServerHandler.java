@@ -167,9 +167,8 @@ public class InterServerHandler {
         // c.updateLoginState(MapleClient.LOGIN_SERVER_TRANSITION, c.getSessionIPAddress());
         channelServer.addPlayer(player);
         c.getSession().write(MaplePacketCreator.getCharInfo(player));
-        if (player.isGM()) {
-            SkillFactory.getSkill(9001004).getEffect(1).applyTo(player);
-        }
+        // Keep staff visible by default so they can receive monster control and
+        // play normally. Staff can still opt into hide mode with the hide command.
         c.getSession().write(MaplePacketCreator.temporaryStats_Reset()); // .
         player.getMap().addPlayer(player);
 

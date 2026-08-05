@@ -347,8 +347,9 @@ public class MapleMonster extends AbstractLoadedMapleLife {
             if (attacker.hasDisease(MapleDisease.CURSE)) {
                 exp /= 2;
             }
-            exp *= attacker.getEXPMod() * (int) (attacker.getStat().expBuff / 100.0);
-            exp = (int) Math.min(Integer.MAX_VALUE, exp * (attacker.getLevel() < 10 ? GameConstants.getExpRate_Below10(attacker.getJob()) : ChannelServer.getInstance(map.getChannel()).getExpRate()));
+            final int expModifier = attacker.getEXPMod() * (int) (attacker.getStat().expBuff / 100.0);
+            final int expRate = ChannelServer.getInstance(map.getChannel()).getExpRate();
+            exp = (int) Math.min(Integer.MAX_VALUE, (long) exp * expModifier * expRate);
             //do this last just incase someone has a 2x exp card and its set to max value
             int Class_Bonus_EXP = 0;
             if (Class_Bonus_EXP_PERCENT > 0) {

@@ -1,2 +1,4 @@
-taskkill /im MapleStory.exe /f
-MapleStory.exe 127.0.0.1 9595
+@echo off
+pushd "%~dp0"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0ms079-launch-guard.ps1"
+popd

@@ -603,31 +603,37 @@ public class MapleItemInformationProvider {
 
     protected final WzElement<?> getItemData(final int itemId) {
         String idStr = "0" + itemId;
-        Optional<ImgdirElement> first = WzData.ITEM.directory().dirStream()
+        WzElement<?> groupedItem = WzData.ITEM.directory().dirStream()
                 .map(dir -> dir.findFile(idStr.substring(0, 4))
                         .map(WzFile::content)
+                        .map(content -> content.find(idStr))
                         .orElse(null))
                 .filter(Objects::nonNull)
-                .findFirst();
+                .findFirst()
+                .orElse(null);
 
-        if(!first.isPresent()) {
-            first = WzData.ITEM.directory().dirStream()
+        if (groupedItem != null) {
+            return groupedItem;
+        }
+
+        Optional<ImgdirElement> standaloneItem = WzData.ITEM.directory().dirStream()
                     .map(dir -> dir.findFile(idStr.substring(1))
                             .map(WzFile::content)
                             .orElse(null))
                     .filter(Objects::nonNull)
                     .findFirst();
+
+        if (standaloneItem.isPresent()) {
+            return standaloneItem.get();
         }
 
-        if(!first.isPresent()){
-            first = WzData.CHARACTER.directory().dirStream()
+        Optional<ImgdirElement> equipment = WzData.CHARACTER.directory().dirStream()
                     .map(dir -> dir.findFile(idStr)
                             .map(WzFile::content)
                             .orElse(null))
                     .filter(Objects::nonNull)
                     .findFirst();
-        }
-        return first.orElse(null);
+        return equipment.orElse(null);
     }
 
     /**
@@ -861,6 +867,7 @@ public class MapleItemInformationProvider {
                         ret.put("incRMAS", Elements.findInt(info, "incRMAS", 100));
                         ret.put("incRMAF", Elements.findInt(info, "incRMAF", 100));
                         ret.put("incRMAI", Elements.findInt(info, "incRMAI", 100));
+                        ret.put("incRMAL", Elements.findInt(info, "incRMAL", 100));
                     }
                     return info;
                 })

@@ -57,6 +57,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Serializable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MapleCharacter.class);
+    private static final long MOVE_ITEM_COOLDOWN_MILLIS = 250L;
 
     private static final long serialVersionUID = 845748950829L;
     private String name, chalktext, BlessOfFairy_Origin, charmessage;
@@ -729,10 +730,11 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
                 ps.setInt(1, charid);
                 rs = ps.executeQuery();
 
-                final Map<Integer, Pair<Byte, Integer>> keyb = ret.keylayout.Layout();
+                final Map<Integer, Pair<Byte, Integer>> keyb = new HashMap<>();
                 while (rs.next()) {
                     keyb.put(Integer.valueOf(rs.getInt("key")), new Pair<Byte, Integer>(rs.getByte("type"), rs.getInt("action")));
                 }
+                ret.keylayout = new MapleKeyLayout(keyb);
                 rs.close();
                 ps.close();
 
@@ -1011,10 +1013,15 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
                 FileoutputUtil.outputFileError("日志\\log\\Packet_Except.log", e);
                 LOGGER.error("[charsave] Error going back to autocommit mode");
             }
+            try {
+                con.close();
+            } catch (SQLException e) {
+                FileoutputUtil.outputFileError(FileoutputUtil.PacketEx_Log, e);
+            }
         }
     }
 
-    public void saveToDB(boolean dc, boolean fromcs) {
+    public synchronized void saveToDB(boolean dc, boolean fromcs) {
         if (isClone()) {
             return;
         }
@@ -1023,6 +1030,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         PreparedStatement ps = null;
         PreparedStatement pse = null;
         ResultSet rs = null;
+        long keyLayoutVersion = -1;
 
         try {
             con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
@@ -1302,9 +1310,9 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
                 cs.save();
             }
             PlayerNPC.updateByCharId(this);
-            keylayout.saveKeys(id);
+            keyLayoutVersion = keylayout.saveKeys(con, id);
             mount.saveMount(id);
-            monsterbook.saveCards(id);
+            monsterbook.saveCards(id, con);
 
             deleteWhereCharacterId(con, "DELETE FROM wishlist WHERE characterid = ?");
             for (int i = 0; i < getWishlistSize(); i++) {
@@ -1338,6 +1346,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
             }
 
             con.commit();
+            keylayout.markSaved(keyLayoutVersion);
         } catch (SQLException | DatabaseException | UnsupportedOperationException e) {
             //e.printStackTrace();
             FileoutputUtil.outputFileError(FileoutputUtil.PacketEx_Log, e);
@@ -1366,6 +1375,11 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
             } catch (SQLException e) {
                 FileoutputUtil.outputFileError(FileoutputUtil.PacketEx_Log, e);
                 //    LOGGER.error(MapleClient.getLogMessage(this, "[charsave] Error going back to autocommit mode") + e);
+            }
+            try {
+                con.close();
+            } catch (SQLException e) {
+                FileoutputUtil.outputFileError(FileoutputUtil.PacketEx_Log, e);
             }
         }
     }
@@ -3045,11 +3059,16 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     }
 
     public final boolean canMoveItem() {
-        if (lastMoveItemTime + 250 > System.currentTimeMillis()) {
+        long currentTime = System.currentTimeMillis();
+        if (!isMoveItemCooldownElapsed(lastMoveItemTime, currentTime)) {
             return false;
         }
-        lastMoveItemTime = System.currentTimeMillis();
+        lastMoveItemTime = currentTime;
         return true;
+    }
+
+    static boolean isMoveItemCooldownElapsed(long lastMoveTime, long currentTime) {
+        return currentTime - lastMoveTime >= MOVE_ITEM_COOLDOWN_MILLIS;
     }
 
     public void updateSingleStat(MapleStat stat, int newval) {
@@ -3694,11 +3713,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     }
 
     public void changeKeybinding(int key, byte type, int action) {
-        if (type != 0) {
-            keylayout.Layout().put(Integer.valueOf(key), new Pair<Byte, Integer>(type, action));
-        } else {
-            keylayout.Layout().remove(Integer.valueOf(key));
-        }
+        keylayout.changeKey(key, type, action);
     }
 
     public void sendMacros() {
@@ -6597,8 +6612,8 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     public int getGamePoints() {
         try {
             int gamePoints = 0;
-            Connection con = DatabaseConnection.getConnection();
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM accounts_info WHERE accId = ? AND worldId = ?")) {
+            try (Connection con = DatabaseConnection.getConnection();
+                    PreparedStatement ps = con.prepareStatement("SELECT * FROM accounts_info WHERE accId = ? AND worldId = ?")) {
                 ps.setInt(1, getClient().getAccID());
                 ps.setInt(2, getWorld());
                 ResultSet rs = ps.executeQuery();
@@ -6639,8 +6654,8 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     public int getGamePointsPD() {
         try {
             int gamePointsPD = 0;
-            Connection con = DatabaseConnection.getConnection();
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM accounts_info WHERE accId = ? AND worldId = ?")) {
+            try (Connection con = DatabaseConnection.getConnection();
+                    PreparedStatement ps = con.prepareStatement("SELECT * FROM accounts_info WHERE accId = ? AND worldId = ?")) {
                 ps.setInt(1, getClient().getAccID());
                 ps.setInt(2, getWorld());
                 ResultSet rs = ps.executeQuery();
@@ -6693,14 +6708,13 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
 
     public void updateGamePointsPD(int amount) {
         try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("UPDATE accounts_info SET gamePointspd = ?, updateTime = CURRENT_TIMESTAMP() WHERE accId = ? AND worldId = ?");
-
-            ps.setInt(1, amount);
-            ps.setInt(2, getClient().getAccID());
-            ps.setInt(3, getWorld());
-            ps.executeUpdate();
-            ps.close();
+            try (Connection con = DatabaseConnection.getConnection();
+                    PreparedStatement ps = con.prepareStatement("UPDATE accounts_info SET gamePointspd = ?, updateTime = CURRENT_TIMESTAMP() WHERE accId = ? AND worldId = ?")) {
+                ps.setInt(1, amount);
+                ps.setInt(2, getClient().getAccID());
+                ps.setInt(3, getWorld());
+                ps.executeUpdate();
+            }
         } catch (SQLException Ex) {
             LOGGER.error("更新角色帐号的在线时间出现错误 - 数据库更新失败." + Ex);
         }
@@ -6712,8 +6726,8 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
 
     public void updateGamePoints(int amount) {
         try {
-            Connection con = DatabaseConnection.getConnection();
-            try (PreparedStatement ps = con.prepareStatement("UPDATE accounts_info SET gamePoints = ?, updateTime = CURRENT_TIMESTAMP() WHERE accId = ? AND worldId = ?")) {
+            try (Connection con = DatabaseConnection.getConnection();
+                    PreparedStatement ps = con.prepareStatement("UPDATE accounts_info SET gamePoints = ?, updateTime = CURRENT_TIMESTAMP() WHERE accId = ? AND worldId = ?")) {
                 ps.setInt(1, amount);
                 ps.setInt(2, getClient().getAccID());
                 ps.setInt(3, getWorld());
@@ -6727,8 +6741,8 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     public int getGamePointsRQ() {
         try {
             int gamePointsRQ = 0;
-            Connection con = DatabaseConnection.getConnection();
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM accounts_info WHERE accId = ? AND worldId = ?")) {
+            try (Connection con = DatabaseConnection.getConnection();
+                    PreparedStatement ps = con.prepareStatement("SELECT * FROM accounts_info WHERE accId = ? AND worldId = ?")) {
                 ps.setInt(1, getClient().getAccID());
                 ps.setInt(2, getWorld());
                 try (ResultSet rs = ps.executeQuery()) {
@@ -6741,14 +6755,14 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
                         }
                         if ((sqlcal.get(5) + 1 <= Calendar.getInstance().get(5)) || (sqlcal.get(2) + 1 <= Calendar.getInstance().get(2)) || (sqlcal.get(1) + 1 <= Calendar.getInstance().get(1))) {
                             gamePointsRQ = 0;
-                            try (PreparedStatement psu = con.prepareStatement("UPDATE accounts_info SET gamePointspd = 0, updateTime = CURRENT_TIMESTAMP() WHERE accId = ? AND worldId = ?")) {
+                            try (PreparedStatement psu = con.prepareStatement("UPDATE accounts_info SET gamePointsrq = 0, updateTime = CURRENT_TIMESTAMP() WHERE accId = ? AND worldId = ?")) {
                                 psu.setInt(1, getClient().getAccID());
                                 psu.setInt(2, getWorld());
                                 psu.executeUpdate();
                             }
                         }
                     } else {
-                        try (PreparedStatement psu = con.prepareStatement("INSERT INTO accounts_info (accId, worldId, gamePointspd) VALUES (?, ?, ?)")) {
+                        try (PreparedStatement psu = con.prepareStatement("INSERT INTO accounts_info (accId, worldId, gamePointsrq) VALUES (?, ?, ?)")) {
                             psu.setInt(1, getClient().getAccID());
                             psu.setInt(2, getWorld());
                             psu.setInt(3, 0);
@@ -6775,14 +6789,13 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
 
     public void updateGamePointsRQ(int amount) {
         try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("UPDATE accounts_info SET gamePointspd = ?, updateTime = CURRENT_TIMESTAMP() WHERE accId = ? AND worldId = ?");
-
-            ps.setInt(1, amount);
-            ps.setInt(2, getClient().getAccID());
-            ps.setInt(3, getWorld());
-            ps.executeUpdate();
-            ps.close();
+            try (Connection con = DatabaseConnection.getConnection();
+                    PreparedStatement ps = con.prepareStatement("UPDATE accounts_info SET gamePointsrq = ?, updateTime = CURRENT_TIMESTAMP() WHERE accId = ? AND worldId = ?")) {
+                ps.setInt(1, amount);
+                ps.setInt(2, getClient().getAccID());
+                ps.setInt(3, getWorld());
+                ps.executeUpdate();
+            }
         } catch (SQLException Ex) {
             LOGGER.error("更新角色帐号的在线时间出现错误 - 数据库更新失败." + Ex);
         }

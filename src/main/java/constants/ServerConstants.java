@@ -21,7 +21,7 @@
 package constants;
 
 import com.github.mrzhqiang.maplestory.config.ServerProperties;
-import handling.login.Balloon;
+import handling.login.handler.Balloon;
 import java.util.ArrayList;
 import java.util.List;
 

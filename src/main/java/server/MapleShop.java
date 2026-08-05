@@ -241,8 +241,7 @@ public class MapleShop {
         MapleShop ret = null;
         int shopId;
 
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement(isShopId ? "SELECT * FROM shops WHERE shopid = ?" : "SELECT * FROM shops WHERE npcid = ?");
 
             ps.setInt(1, id);

@@ -58,14 +58,9 @@ public class MapleMonsterInformationProvider {
     }
 
     private final void retrieveGlobal() {
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
-        try {
-            final Connection con = DatabaseConnection.getConnection();
-            ps = con.prepareStatement("SELECT * FROM drop_data_global WHERE chance > 0");
-            rs = ps.executeQuery();
-
+        try (Connection con = DatabaseConnection.getConnection();
+                PreparedStatement ps = con.prepareStatement("SELECT * FROM drop_data_global WHERE chance > 0");
+                ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 globaldrops.add(
                         new MonsterGlobalDropEntry(
@@ -77,20 +72,8 @@ public class MapleMonsterInformationProvider {
                                 rs.getInt("maximum_quantity"),
                                 rs.getShort("questid")));
             }
-            rs.close();
-            ps.close();
         } catch (SQLException e) {
             LOGGER.error("Error retrieving drop" + e);
-        } finally {
-            try {
-                if (ps != null) {
-                    ps.close();
-                }
-                if (rs != null) {
-                    rs.close();
-                }
-            } catch (SQLException ignore) {
-            }
         }
     }
 
@@ -100,40 +83,28 @@ public class MapleMonsterInformationProvider {
         }
         final List<MonsterDropEntry> ret = new LinkedList<MonsterDropEntry>();
 
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        try {
-            ps = DatabaseConnection.getConnection().prepareStatement("SELECT * FROM drop_data WHERE dropperid = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+                PreparedStatement ps = con.prepareStatement("SELECT * FROM drop_data WHERE dropperid = ?")) {
             ps.setInt(1, monsterId);
-            rs = ps.executeQuery();
-            int itemid;
-            int chance;
-            while (rs.next()) {
-                itemid = rs.getInt("itemid");
-                chance = rs.getInt("chance");
-                if (GameConstants.getInventoryType(itemid) == MapleInventoryType.EQUIP) {
-                    chance = chance / 3; //in GMS/SEA it was raised
+            try (ResultSet rs = ps.executeQuery()) {
+                int itemid;
+                int chance;
+                while (rs.next()) {
+                    itemid = rs.getInt("itemid");
+                    chance = rs.getInt("chance");
+                    if (GameConstants.getInventoryType(itemid) == MapleInventoryType.EQUIP) {
+                        chance = chance / 3; //in GMS/SEA it was raised
+                    }
+                    ret.add(new MonsterDropEntry(
+                            itemid,
+                            chance,
+                            rs.getInt("minimum_quantity"),
+                            rs.getInt("maximum_quantity"),
+                            rs.getShort("questid")));
                 }
-                ret.add(new MonsterDropEntry(
-                        itemid,
-                        chance,
-                        rs.getInt("minimum_quantity"),
-                        rs.getInt("maximum_quantity"),
-                        rs.getShort("questid")));
             }
         } catch (SQLException e) {
             return ret;
-        } finally {
-            try {
-                if (ps != null) {
-                    ps.close();
-                }
-                if (rs != null) {
-                    rs.close();
-                }
-            } catch (SQLException ignore) {
-                return ret;
-            }
         }
         drops.put(monsterId, ret);
         return ret;
