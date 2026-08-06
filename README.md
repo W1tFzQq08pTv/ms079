@@ -80,6 +80,18 @@ Windows 系统或服务器，启动脚本二选其一。
 
 **注意，Maven 命令也可以从 IDEA 中运行，使用 `Alt + F12` 快捷键（内置 Maven 插件）即可。**
 
+### 2.3 发布源码
+
+当形如 `vX.Y.Z` 或 `vX.Y.Z-rc.1` 的标签指向已经进入远端 `main` 的提交并推送到
+GitHub 后，`Source Release` 工作流会自动创建 GitHub Release，并上传：
+
+- `ms079-[tag]-source.tar.gz`
+- `ms079-[tag]-source.zip`
+- `SHA256SUMS`
+
+源码包由标签对应提交的 Git 跟踪文件直接生成，不包含工作区未跟踪文件或 `.git` 目录。
+同一标签的工作流失败后可以安全重跑，已有的同名发布产物会被覆盖。
+
 ## 三、初始化数据库
 
 IDEA 社区版不支持数据库操作。
