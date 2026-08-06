@@ -13,7 +13,6 @@ public class MapleKeyLayoutTest {
 
     @Test
     public void savesAndRetriesInsideTheCallersTransaction() throws Exception {
-        Class.forName("com.mysql.cj.jdbc.Driver");
         try (Connection connection = openConnection()) {
             connection.setAutoCommit(false);
             int originalCount = countKeys(connection);
@@ -33,7 +32,6 @@ public class MapleKeyLayoutTest {
 
     @Test
     public void persistsRemovingTheLastKey() throws Exception {
-        Class.forName("com.mysql.cj.jdbc.Driver");
         try (Connection connection = openConnection()) {
             connection.setAutoCommit(false);
 
@@ -48,7 +46,6 @@ public class MapleKeyLayoutTest {
 
     @Test(timeout = 10000)
     public void repeatedSavesDoNotWaitForASecondConnection() throws Exception {
-        Class.forName("com.mysql.cj.jdbc.Driver");
         try (Connection connection = openConnection()) {
             connection.setAutoCommit(false);
             int originalCount = countKeys(connection);
@@ -65,8 +62,18 @@ public class MapleKeyLayoutTest {
     }
 
     private Connection openConnection() throws Exception {
-        return DriverManager.getConnection(
-                "jdbc:mysql://127.0.0.1:3306/ms079?characterEncoding=UTF-8", "root", "123456");
+        Class.forName("org.h2.Driver");
+        Connection connection = DriverManager.getConnection(
+                "jdbc:h2:mem:key-layout;MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE IF NOT EXISTS keymap ("
+                    + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                    + "characterid INT NOT NULL, "
+                    + "`key` INT NOT NULL, "
+                    + "`type` INT NOT NULL, "
+                    + "`action` INT NOT NULL)");
+        }
+        return connection;
     }
 
     private int countKeys(Connection connection) throws Exception {

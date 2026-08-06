@@ -70,10 +70,12 @@ Windows 系统或服务器，启动脚本二选其一。
 
 ### 2.2 Maven 插件
 
-在项目根目录下打开 CMD 工具（需要安装 Maven 插件）：
+项目已提供 Maven Wrapper，只需安装 JDK 8，无需另外安装固定版本的 Maven：
 
-- 编译命令：`mvn clean compile`
-- 打包命令：`mvn clean package`
+- Linux/macOS 编译：`./mvnw clean compile`
+- Linux/macOS 测试：`./mvnw test`
+- Linux/macOS 打包：`./mvnw clean package`
+- Windows 对应使用 `mvnw.cmd`，例如 `mvnw.cmd test`
 
 **注意，Maven 命令也可以从 IDEA 中运行，使用 `Alt + F12` 快捷键（内置 Maven 插件）即可。**
 
