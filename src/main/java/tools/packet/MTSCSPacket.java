@@ -51,6 +51,7 @@ public class MTSCSPacket {
     };
     private static final byte[] CASH_SHOP_CATALOG_METADATA = HexTool.getByteArrayFromHexString(
             "00 00 00 63 00 74 00 6F 00 72 00 32 00 44 00 00 00 00 00 8D 00 11 00 D4 00 0E 06 98 E9 86 07 38 C2 BD 07 00 00 65 00 6C 00 00 00 04 00 03 00 D7 01 0C 06 0E 00 00 00 35 00 31 00 31 00 30 00 30 00 30 00 31 00 00 00 00 00 00 00 04 00 07 00 D3 01 0A 06 10 00 00 00 65 00 62 00 75 00 72 00 73 00 74 00 65 00 72 00 00 00 00 00 82 00 0B 00 2F 00 0A 06 B8 05 49 07 88 D6 B3 07");
+    private static final int MAX_MAPLE_PACKET_LENGTH = 0xFFFF;
 
     public static MaplePacket warpCS(MapleClient c) {
         final MaplePacketLittleEndianWriter mplew = new MaplePacketLittleEndianWriter();
@@ -153,19 +154,9 @@ public class MTSCSPacket {
         //  PacketHelper.addCharacterInfo(mplew, c.getPlayer());
         //  mplew.writeAsciiString(c.getAccountName());   
         // Legacy captured catalog removed; Git retains the original packet for reference.
-        mplew.writeInt(CASH_SHOP_FEATURED_SERIALS.length);
-        for (int serial : CASH_SHOP_FEATURED_SERIALS) {
-            mplew.writeInt(serial);
-        }
         Collection<CashModInfo> modifications = CashItemFactory.getInstance().getAllModInfo();
-        if (modifications.size() > Short.MAX_VALUE) {
-            throw new IllegalStateException("Too many cash-shop modifications: " + modifications.size());
-        }
-        mplew.writeShort(modifications.size());
-        for (CashModInfo modification : modifications) {
-            addModCashItemInfo(mplew, modification);
-        }
-        addCashShopCatalogTail(mplew, CashItemFactory.getInstance().getBestItems());
+        addCashShopCatalog(mplew, modifications, CashItemFactory.getInstance().getBestItems(),
+                MAX_MAPLE_PACKET_LENGTH);
 
         /*
          * mplew.write(HexTool.getByteArrayFromHexString("49 00 00 00 57 A5 9B
@@ -3604,6 +3595,59 @@ public class MTSCSPacket {
         mplew.writeZeroBytes(5); // event flag and event serial
     }
 
+    static int addCashShopCatalog(MaplePacketLittleEndianWriter mplew,
+                                  Collection<CashModInfo> modifications,
+                                  int[] bestItems,
+                                  int maxPacketLength) {
+        final int fixedCatalogBytes = Integer.BYTES
+                + (CASH_SHOP_FEATURED_SERIALS.length * Integer.BYTES)
+                + Short.BYTES
+                + CASH_SHOP_CATALOG_METADATA.length
+                + (8 * 2 * bestItems.length * 3 * Integer.BYTES)
+                + 5;
+        final int modificationBudget = maxPacketLength - mplew.size() - fixedCatalogBytes;
+        if (modificationBudget < 0) {
+            throw new IllegalStateException("Cash-shop character data exceeds packet limit: " + mplew.size());
+        }
+
+        List<CashModInfo> sortedModifications = new ArrayList<CashModInfo>(modifications);
+        Collections.sort(sortedModifications, new Comparator<CashModInfo>() {
+            @Override
+            public int compare(CashModInfo left, CashModInfo right) {
+                return Integer.compare(left.sn, right.sn);
+            }
+        });
+
+        List<byte[]> serializedModifications = new ArrayList<byte[]>();
+        int modificationBytes = 0;
+        for (CashModInfo modification : sortedModifications) {
+            MaplePacketLittleEndianWriter modificationWriter = new MaplePacketLittleEndianWriter();
+            addModCashItemInfo(modificationWriter, modification);
+            byte[] serialized = modificationWriter.toByteArray();
+            if (modificationBytes + serialized.length > modificationBudget) {
+                continue;
+            }
+            serializedModifications.add(serialized);
+            modificationBytes += serialized.length;
+        }
+
+        mplew.writeInt(CASH_SHOP_FEATURED_SERIALS.length);
+        for (int serial : CASH_SHOP_FEATURED_SERIALS) {
+            mplew.writeInt(serial);
+        }
+        mplew.writeShort(serializedModifications.size());
+        for (byte[] serialized : serializedModifications) {
+            mplew.write(serialized);
+        }
+        addCashShopCatalogTail(mplew, bestItems);
+
+        if (serializedModifications.size() < sortedModifications.size()) {
+            LOGGER.warn("Cash-shop catalog limited to {} of {} modifications ({} bytes)",
+                    serializedModifications.size(), sortedModifications.size(), mplew.size());
+        }
+        return serializedModifications.size();
+    }
+
     public static MaplePacket sendBlockedMessage(int type) {
         MaplePacketLittleEndianWriter mplew = new MaplePacketLittleEndianWriter();
         if (ServerConstants.properties.isPacketDebugLogger()) {
@@ -3971,7 +4015,7 @@ public class MTSCSPacket {
     }
 
     public static void addModCashItemInfo(MaplePacketLittleEndianWriter mplew, CashModInfo item) {
-        if (ServerConstants.properties.isPacketDebugLogger()) {
+        if (ServerConstants.properties != null && ServerConstants.properties.isPacketDebugLogger()) {
             LOGGER.debug("addModCashItemInfo--------------------");
         }
         int flags = item.flags;

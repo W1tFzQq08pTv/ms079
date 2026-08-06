@@ -540,8 +540,14 @@ public final class MapleMap {
 
         spawnedMonstersOnMap.decrementAndGet();
         removeMapObject(monster);
-        int dropOwner = monster.killBy(chr, lastSkill);
         broadcastMessage(MobPacket.killMonster(monster.getObjectId(), animation));
+        int dropOwner = chr == null ? 0 : chr.getId();
+        try {
+            dropOwner = monster.killBy(chr, lastSkill);
+        } catch (RuntimeException e) {
+            LOGGER.error("Monster reward settlement failed: map={}, monster={}, objectId={}, character={}",
+                    mapid, monster.getId(), monster.getObjectId(), dropOwner, e);
+        }
 
         if (monster.getBuffToGive() > -1) {
             final int buffid = monster.getBuffToGive();
