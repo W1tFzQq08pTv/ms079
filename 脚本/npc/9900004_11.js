@@ -1,6 +1,5 @@
 var status = 0;
-var item = 
-Array(     
+var item = [
 			Array(1492023,50,1,1), //七星剑
 			Array(1492025,50,1,1), //七星剑
 			Array(1302031,110,1,1), //七星剑
@@ -297,7 +296,7 @@ Array(
 			Array(2290062,50,1,1), //
 			Array(2290063,50,1,1) //
 
-);
+];
 
 function start() {
 	status = -1;

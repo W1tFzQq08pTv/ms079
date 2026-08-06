@@ -1,15 +1,20 @@
-FROM maven:3.8.8-eclipse-temurin-8 AS build
+FROM eclipse-temurin:8-jdk@sha256:c8b86f2c0a9bd6cc1b7fabc5d1a097501a166eea7cad3b2764e90e96178bea9b AS build
 
 WORKDIR /build
-COPY pom.xml ./
-RUN mvn -B -DskipTests dependency:go-offline
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY .mvn ./.mvn
+COPY mvnw pom.xml ./
+RUN ./mvnw --batch-mode --no-transfer-progress -DskipTests dependency:go-offline
 
 COPY src ./src
-RUN mvn -B -DskipTests process-classes dependency:copy-dependencies \
+RUN ./mvnw --batch-mode --no-transfer-progress -DskipTests process-classes dependency:copy-dependencies \
         -DincludeScope=runtime \
         -DoutputDirectory=/build/target/dependency
 
-FROM eclipse-temurin:8-jre AS runtime
+FROM eclipse-temurin:8-jre@sha256:058a4f63a2338710054e905f88cd50e843173124b50a921df83e77506af6fc82 AS runtime
 
 WORKDIR /app
 ENV LANG=C.UTF-8 \

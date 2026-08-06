@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   test:
-    name: Java 8 / Maven test
+    name: Java 8 / Maven verify
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
@@ -34,12 +34,11 @@ jobs:
           cache: maven
           cache-dependency-path: pom.xml
 
-      - name: Compile and test
-        run: ./mvnw --batch-mode --no-transfer-progress test
+      - name: Verify Java build
+        run: ./mvnw --batch-mode --no-transfer-progress verify
 
-  docker-build:
-    name: Docker image build
-    needs: test
+  game-data:
+    name: Game data validation
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
@@ -47,5 +46,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Set up Java 8
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '8'
+          cache: maven
+          cache-dependency-path: pom.xml
+
+      - name: Validate scripts, WZ XML, and server configuration
+        run: >-
+          ./mvnw --batch-mode --no-transfer-progress
+          -Dtest=RepositoryDataValidationTest test
+
+  docker-build:
+    name: Docker image / MySQL startup
+    needs:
+      - test
+      - game-data
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Validate Dockerfile
+        run: >-
+          docker build --check
+          --build-arg 'BUILDKIT_DOCKERFILE_CHECK=error=true'
+          .
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
       - name: Build runtime image
         run: docker build --target runtime --tag ms079-server:ci .
+
+      - name: Import MySQL 5.7 schema and start server
+        run: .github/scripts/mysql-startup-smoke.sh ms079-server:ci

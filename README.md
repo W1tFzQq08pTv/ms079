@@ -73,8 +73,9 @@ Windows 系统或服务器，启动脚本二选其一。
 项目已提供 Maven Wrapper，只需安装 JDK 8，无需另外安装固定版本的 Maven：
 
 - Linux/macOS 编译：`./mvnw clean compile`
-- Linux/macOS 测试：`./mvnw test`
-- Linux/macOS 打包：`./mvnw clean package`
+- Linux/macOS 测试与构建验证：`./mvnw verify`
+- Linux/macOS 打包 JAR：`./mvnw clean package`
+- Linux/macOS 生成包含 `wz`、脚本和数据库的完整发布包：`./mvnw -Prelease clean package`
 - Windows 对应使用 `mvnw.cmd`，例如 `mvnw.cmd test`
 
 **注意，Maven 命令也可以从 IDEA 中运行，使用 `Alt + F12` 快捷键（内置 Maven 插件）即可。**
@@ -103,9 +104,9 @@ IDEA 旗舰版可以连接数据库，然后找到 `db/ms079.sql` 文件，右�
 1. 打包（已有 `ms079-[version]-dist.zip` 文件，可忽略此步骤）
    - 展开 IDEA 右侧栏 Maven 菜单中的 `Lifecycle` 选项
    - 双击 `clean` 清理旧文件
-   - 双击 `package` 进行打包
+   - 使用 `release` Profile 执行 `package` 进行完整打包
    - 确定已生成 `/target/ms079-[version]-dist.zip` 文件
-   - 【可选】或者通过 Maven 插件，在根目录下使用 `mvn clean package` 命令进行打包
+   - 【可选】或者通过 Maven Wrapper，在根目录下使用 `./mvnw -Prelease clean package` 命令进行打包
 2. 解压 zip 文件到某一个文件夹
 3. 进入文件夹，修改 `服务端配置.ini` 配置文件中的参数（主要是数据库的账号密码）
 4. 打开 `启动服务端-GUI.bat`，点击【启动服务端】按钮
