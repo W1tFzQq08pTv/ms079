@@ -1,5 +1,6 @@
 .git
 .github
+.env
 .idea
 target
 out
@@ -11,6 +12,8 @@ log*Script_Except.log
 wz
 脚本
 db
+docker/mysql/data
+docker/mysql/backups
 old-files
 *.iml
 *.log

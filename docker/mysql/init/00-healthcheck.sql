@@ -1,0 +1,3 @@
+CREATE USER IF NOT EXISTS 'healthcheck'@'127.0.0.1' IDENTIFIED BY '';
+GRANT USAGE ON *.* TO 'healthcheck'@'127.0.0.1';
+FLUSH PRIVILEGES;

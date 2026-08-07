@@ -14,3 +14,7 @@ build
 /日志*
 /log*Script_Except.log
 /.env
+
+# Local Docker database state
+/docker/mysql/data/
+/docker/mysql/backups/
