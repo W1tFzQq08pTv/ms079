@@ -6,8 +6,6 @@
  */
 
 
-importPackage(net.sf.odinms.client);
-
 var aaa = "#fUI/UIWindow.img/Quest/icon9/0#";
 var zzz = "#fUI/UIWindow.img/Quest/icon8/0#";
 var sss = "#fUI/UIWindow.img/QuestIcon/3/0#";
