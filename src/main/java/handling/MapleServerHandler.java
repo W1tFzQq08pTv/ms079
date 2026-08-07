@@ -341,6 +341,11 @@ public class MapleServerHandler extends IoHandlerAdapter implements MapleServerH
 
         if (client != null) {
             try {
+                if (cs) {
+                    final int characterId = client.getPlayer() == null ? -1 : client.getPlayer().getId();
+                    LOGGER.info("Cash-shop session closed: characterId={}, accountId={}, loggedIn={}",
+                            characterId, client.getAccID(), client.isLoggedIn());
+                }
                 FileWriter fw = isLoggedIP(session);
                 if (fw != null) {
                     fw.write("=== Session Closed ===");

@@ -7,6 +7,7 @@ import client.inventory.*;
 import constants.GameConstants;
 import constants.OtherSettings;
 import constants.ServerConstants;
+import handling.MaplePacket;
 import handling.cashshop.CashShopServer;
 import handling.channel.ChannelServer;
 import handling.login.LoginServer;
@@ -61,6 +62,7 @@ public class CashShopOperation {
             transfer = CashShopServer.getPlayerStorageMTS().getPendingCharacter(playerid);
             mts = true;
             if (transfer == null) {
+                LOGGER.warn("Cash-shop entry rejected: no pending transfer for characterId={}", playerid);
                 c.getSession().close();
                 return;
             }
@@ -71,18 +73,24 @@ public class CashShopOperation {
         c.setAccID(chr.getAccountID());
 
         if (!c.CheckIPAddress()) { // Remote hack
+            LOGGER.warn("Cash-shop entry rejected: session address mismatch for characterId={}, accountId={}",
+                    chr.getId(), chr.getAccountID());
             c.getSession().close();
             return;
         }
 
         final int state = c.getLoginState();
-        boolean allowLogin = false;
+        final boolean characterAlreadyConnected;
         if (state == MapleClient.LOGIN_SERVER_TRANSITION || state == MapleClient.CHANGE_CHANNEL) {
-            if (!World.isCharacterListConnected(c.loadCharacterNames(c.getWorld()))) {
-                allowLogin = true;
-            }
+            characterAlreadyConnected = World.isCharacterListConnected(c.loadCharacterNames(c.getWorld()));
+        } else {
+            characterAlreadyConnected = false;
         }
+        final boolean allowLogin = (state == MapleClient.LOGIN_SERVER_TRANSITION
+                || state == MapleClient.CHANGE_CHANNEL) && !characterAlreadyConnected;
         if (!allowLogin) {
+            LOGGER.warn("Cash-shop entry rejected: characterId={}, accountId={}, loginState={}, alreadyConnected={}",
+                    chr.getId(), chr.getAccountID(), state, characterAlreadyConnected);
             c.setPlayer(null);
             c.getSession().close();
             return;
@@ -94,7 +102,10 @@ public class CashShopOperation {
             MTSOperation.MTSUpdate(MTSStorage.getInstance().getCart(c.getPlayer().getId()), c);
         } else {
             CashShopServer.getPlayerStorage().registerPlayer(chr);
-            c.getSession().write(MTSCSPacket.warpCS(c));
+            MaplePacket csOpen = MTSCSPacket.warpCS(c);
+            LOGGER.info("Cash-shop entry accepted: characterId={}, accountId={}, loginState={}, csOpenBytes={}",
+                    chr.getId(), chr.getAccountID(), state, csOpen.getBytes().length);
+            c.getSession().write(csOpen);
             CSUpdate(c);
         }
     }
