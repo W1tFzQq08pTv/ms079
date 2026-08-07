@@ -94,16 +94,11 @@ function action(mode, type, selection) {
 				cm.dispose();
 				return;		
             }	
-			if (cm.haveItem(4031057, 1)){
+			if (cm.haveItem(4031058, 1) || cm.haveItem(4031057, 1)){
                 cm.sendNext("恭喜你到达这里,最后我将给你一个考验!");			
-            } else if (!(cm.haveItem(4031057,1))) {
+            } else {
 				cm.warp(102000003);
                 cm.sendOk("去找 #r剑士转职官#k 他会帮助你的!");
-                cm.dispose();
-            } else if (cm.getPlayer().getRemainingSp() <= (cm.getLevel() - 70) * 3) {
-                cm.sendNext("你的技能点数还没点完..");
-		} else {
-                cm.sendOk("你还不能转职...");
                 cm.dispose();
             }
         } else if (status == 1) {
@@ -111,7 +106,7 @@ function action(mode, type, selection) {
                 if (cm.getJob()==110) {
                     cm.changeJob(111);
                     //cm.getPlayer().gainAp(5);
-					cm.gainItem(4031057, -1);
+					if (cm.haveItem(4031057, 1)) cm.gainItem(4031057, -1);
 					cm.gainItem(4031058, -1);
 					cm.sendOk("恭喜转职了!");
 					cm.worldMessage("‘转职快报’：恭喜玩家."+ cm.getChar().getName() +"  成功三转-十字军让我们热烈的祝福他/她吧！");
@@ -119,7 +114,7 @@ function action(mode, type, selection) {
                 } else if (cm.getJob()==120) {
                     cm.changeJob(121);
                     //cm.getPlayer().gainAp(5);
-					cm.gainItem(4031057, -1);
+					if (cm.haveItem(4031057, 1)) cm.gainItem(4031057, -1);
 					cm.gainItem(4031058, -1);
 					cm.sendOk("恭喜转职了!");
 					cm.worldMessage("‘转职快报’：恭喜玩家."+ cm.getChar().getName() +"  成功三转-骑士让我们热烈的祝福他/她吧！");
@@ -127,14 +122,14 @@ function action(mode, type, selection) {
                 } else if (cm.getJob()==130) {
                     cm.changeJob(131);
                     //cm.getPlayer().gainAp(5);
-					cm.gainItem(4031057, -1);
+					if (cm.haveItem(4031057, 1)) cm.gainItem(4031057, -1);
 					cm.gainItem(4031058, -1);
 					cm.sendOk("恭喜转职了!");
 					cm.worldMessage("‘转职快报’：恭喜玩家."+ cm.getChar().getName() +"  成功三转-龙骑士让我们热烈的祝福他/她吧！");
                     cm.dispose();
                 } else if (cm.getJob()==2110) {
 					cm.changeJob(2111);
-					cm.gainItem(4031057, -1);
+					if (cm.haveItem(4031057, 1)) cm.gainItem(4031057, -1);
 					cm.gainItem(4031058, -1);
 					cm.sendOk("恭喜转职了!");
 					cm.worldMessage("‘转职快报’：恭喜玩家."+ cm.getChar().getName() +"  成功狂狼勇士三转让我们热烈的祝福他/她吧！");
