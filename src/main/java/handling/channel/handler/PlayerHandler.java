@@ -1219,19 +1219,22 @@ public class PlayerHandler {
         }
         if (slea.available() != 0) {
 //            slea.skip(6); //D3 75 00 00 00 00
-            slea.readByte(); // 1 = from dying 2 = regular portals
+            final byte changeType = slea.readByte(); // 1 = from dying 2 = regular portals
             int targetid = slea.readInt(); // FF FF FF FF
             if (targetid == 0) {
                 targetid = 1000000;
             }
-            final MaplePortal portal = chr.getMap().getPortal(slea.readMapleAsciiString());
+            final String portalName = slea.readMapleAsciiString();
+            final MaplePortal portal = chr.getMap().getPortal(portalName);
             /*
              * if (slea.available() >= 7) { chr.updateTick(slea.readInt()); }
              */
             //  slea.skip(1);
             final boolean wheel = slea.readShort() > 0 && !MapConstants.isEventMap(chr.getMapId()) && chr.haveItem(5510000, 1, false, true);
 
-            if (targetid != -1 && !chr.isAlive()) {
+            if (!chr.isAlive()) {
+                LOGGER.info("Death return requested: characterId={}, mapId={}, changeType={}, targetId={}, portal={}, wheel={}",
+                        chr.getId(), chr.getMapId(), changeType, targetid, portalName, wheel);
                 chr.setStance(0);
                 if (chr.getEventInstance() != null && chr.getEventInstance().revivePlayer(chr) && chr.isAlive()) {
                     return;
