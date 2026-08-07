@@ -1596,15 +1596,19 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
 
             @Override
             public void run() {
-                if (stats.getHp() - bloodEffect.getX() > 1) {
-                    cancelBuffStats(MapleBuffStat.DRAGONBLOOD);
-                } else {
+                if (canApplyDragonBloodTick(stats.getHp(), bloodEffect.getX())) {
                     addHP(-bloodEffect.getX());
                     client.getSession().write(MaplePacketCreator.showOwnBuffEffect(bloodEffect.getSourceId(), 5));
                     map.broadcastMessage(MapleCharacter.this, MaplePacketCreator.showBuffeffect(getId(), bloodEffect.getSourceId(), 5), false);
+                } else {
+                    cancelBuffStats(MapleBuffStat.DRAGONBLOOD);
                 }
             }
         }, 4000, 4000);
+    }
+
+    static boolean canApplyDragonBloodTick(int hp, int hpCost) {
+        return hp - hpCost > 1;
     }
 
     public void startMapTimeLimitTask(int time, final MapleMap to) {
