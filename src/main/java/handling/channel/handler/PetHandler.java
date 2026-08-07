@@ -172,7 +172,8 @@ public class PetHandler {
         }
 
         final List<Integer> supportedPets = MapleItemInformationProvider.getInstance().petsCanConsume(itemId);
-        if (!supportedPets.isEmpty() && !supportedPets.contains(pet.getPetItemId())) {
+        // The regular pet food is generic, but its v079 WZ whitelist predates newer pets.
+        if (itemId != 2120000 && !supportedPets.isEmpty() && !supportedPets.contains(pet.getPetItemId())) {
             c.getSession().write(MaplePacketCreator.enableActions());
             return;
         }
