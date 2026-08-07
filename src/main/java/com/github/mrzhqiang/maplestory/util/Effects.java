@@ -45,7 +45,10 @@ public final class Effects {
         effect.setProp((short) Elements.findInt(level, "prop"));
         effect.setCooldown(Elements.findInt(level, "cooltime"));
         effect.setMorphId(Elements.findInt(level, "morph"));
-        effect.setMobCount((byte) Elements.findInt(level, "mobCount"));
+        // Attack skills without an explicit mobCount are single-target in v079.
+        // Keeping the item default at zero avoids turning ordinary consumables
+        // into attack effects.
+        effect.setMobCount((byte) Elements.findInt(level, "mobCount", skill ? 1 : 0));
         // fixme item 相关的设置，怕出问题，先全部在这边实现，待以后测试
 
         effect.setHpR(Elements.findInt(level, "hpR") / 100.0);
