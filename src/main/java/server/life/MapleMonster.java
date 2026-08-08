@@ -339,16 +339,17 @@ public class MapleMonster extends AbstractLoadedMapleLife {
             final Integer holySymbol = attacker.getBuffedValue(MapleBuffStat.HOLY_SYMBOL);
             if (holySymbol != null) {
                 if (numExpSharers == 1) {
-                    exp *= 1.0 + (holySymbol.doubleValue() / 500.0);
+                    exp = (int) Math.min(Integer.MAX_VALUE, exp * (1.0 + (holySymbol.doubleValue() / 500.0)));
                 } else {
-                    exp *= 1.0 + (holySymbol.doubleValue() / 100.0);
+                    exp = (int) Math.min(Integer.MAX_VALUE, exp * (1.0 + (holySymbol.doubleValue() / 100.0)));
                 }
             }
             if (attacker.hasDisease(MapleDisease.CURSE)) {
                 exp /= 2;
             }
-            exp *= attacker.getEXPMod() * (int) (attacker.getStat().expBuff / 100.0);
-            exp = (int) Math.min(Integer.MAX_VALUE, exp * (attacker.getLevel() < 10 ? GameConstants.getExpRate_Below10(attacker.getJob()) : ChannelServer.getInstance(map.getChannel()).getExpRate()));
+            final int expModifier = attacker.getEXPMod() * (int) (attacker.getStat().expBuff / 100.0);
+            final int expRate = ChannelServer.getInstance(map.getChannel()).getExpRate();
+            exp = (int) Math.min(Integer.MAX_VALUE, (long) exp * expModifier * expRate);
             //do this last just incase someone has a 2x exp card and its set to max value
             int Class_Bonus_EXP = 0;
             if (Class_Bonus_EXP_PERCENT > 0) {
@@ -364,7 +365,7 @@ public class MapleMonster extends AbstractLoadedMapleLife {
             }
             int wedding_EXP = 0;
             if (attacker.getMarriageId() > 0 && attacker.getMap().getCharacterById_InMap(attacker.getMarriageId()) != null) {
-                wedding_EXP += (exp / 100.0d) * 10.0d;
+                wedding_EXP = (int) ((exp / 100.0d) * 10.0d);
             }
             attacker.gainExpMonster(exp, true, highestDamage, pty, wedding_EXP, Class_Bonus_EXP, Equipment_Bonus_EXP, Premium_Bonus_EXP);
             // attacker.increaseEquipExp(exp);

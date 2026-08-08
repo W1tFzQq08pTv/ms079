@@ -74,12 +74,13 @@ public enum ItemLoader {
         Map<Integer, Pair<IItem, MapleInventoryType>> items = new LinkedHashMap<>();
         StringBuilder query = new StringBuilder();
         query.append("SELECT * FROM `hiredmerchitems` LEFT JOIN `hiredmerchequipment` USING(`inventoryitemid`) WHERE `type` = ? AND `packageid` = ? AND `accountid` = ? ");
-        PreparedStatement ps = DatabaseConnection.getConnection().prepareStatement(query.toString());
-        ps.setInt(1, value);
-        ps.setInt(2, packageid);
-        ps.setInt(3, accountid);
-        ResultSet rs = ps.executeQuery();
-        while (rs.next()) {
+        try (Connection con = DatabaseConnection.getConnection();
+                PreparedStatement ps = con.prepareStatement(query.toString())) {
+            ps.setInt(1, value);
+            ps.setInt(2, packageid);
+            ps.setInt(3, accountid);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
             MapleInventoryType mit = MapleInventoryType.getByType(rs.getByte("inventorytype"));
             if (mit.equals(MapleInventoryType.EQUIP) || mit.equals(MapleInventoryType.EQUIPPED)) {
                 Equip equip = new Equip(rs.getInt("itemid"), rs.getShort("position"), rs.getInt("uniqueid"), rs.getByte("flag"));
@@ -146,10 +147,9 @@ public enum ItemLoader {
                 }
                 items.put(rs.getInt("inventoryitemid"), new Pair<IItem, MapleInventoryType>(item.copy(), mit));
             }
+                }
+            }
         }
-
-        rs.close();
-        ps.close();
         return items;
     }
     //does not need connection con to be auto commit
@@ -176,14 +176,14 @@ public enum ItemLoader {
             query.append(" AND `inventorytype` = ");
             query.append(MapleInventoryType.EQUIPPED.getType());
         }
-        PreparedStatement ps = DatabaseConnection.getConnection().prepareStatement(query.toString());
-        ps.setInt(1, value);
-        for (int i = 0; i < lulz.size(); i++) {
-            ps.setInt(i + 2, lulz.get(i));
-        }
-        ResultSet rs = ps.executeQuery();
-
-        while (rs.next()) {
+        try (Connection con = DatabaseConnection.getConnection();
+                PreparedStatement ps = con.prepareStatement(query.toString())) {
+            ps.setInt(1, value);
+            for (int i = 0; i < lulz.size(); i++) {
+                ps.setInt(i + 2, lulz.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
             MapleInventoryType mit = MapleInventoryType.getByType(rs.getByte("inventorytype"));
 
             if (mit.equals(MapleInventoryType.EQUIP) || mit.equals(MapleInventoryType.EQUIPPED)) {
@@ -253,22 +253,21 @@ public enum ItemLoader {
                 }
                 items.put(rs.getInt("inventoryitemid"), new Pair<IItem, MapleInventoryType>(item.copy(), mit));
             }
+                }
+            }
         }
-
-        rs.close();
-        ps.close();
         return items;
     }
 
     public void saveItems(List<Pair<IItem, MapleInventoryType>> items, Integer... id) throws SQLException {
-        Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
         /*
          * try {
          *
          * con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
          * con.setAutoCommit(false);
          */
-        saveItems(items, con, id);
+            saveItems(items, con, id);
         /*
          * con.commit(); } catch (Exception e) { e.printStackTrace();
          * LOGGER.error("[charsave] Error saving inventory" + e); try {
@@ -279,6 +278,7 @@ public enum ItemLoader {
          * } catch (SQLException e) { LOGGER.error("[charsave] Error going
          * back to autocommit mode inventory" + e); } }
          */
+        }
     }
 
     public void saveItems(List<Pair<IItem, MapleInventoryType>> items, final Connection con, Integer... id) throws SQLException {

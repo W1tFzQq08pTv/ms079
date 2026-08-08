@@ -55,6 +55,20 @@ public class MaplePacketLittleEndianWriter extends GenericLittleEndianWriter {
     }
 
     /**
+     * Returns the number of bytes currently written without copying the packet.
+     */
+    public final int size() {
+        return baos.size();
+    }
+
+    /**
+     * Returns a copy of the bytes currently written.
+     */
+    public final byte[] toByteArray() {
+        return baos.toByteArray();
+    }
+
+    /**
      * Changes this packet into a human-readable hexadecimal stream of bytes.
      *
      * @return This packet as hex digits.

@@ -52,7 +52,7 @@ public class MapleTrade {
             chr.get().gainMeso(exchangeMeso - GameConstants.getTaxAmount(exchangeMeso), false, true, false);
          //   Trade = "[交易] " + (chr.get()).getName() + " 交易获得金币: " + this.exchangeMeso + "\r\n";
         } 
-       // FileoutputUtil.packetLog("日志\\log\\交易记录\\"+(chr.get()).getName()+".log", Trade);
+       // FileoutputUtil.packetLog("logs/trades/"+(chr.get()).getName()+".log", Trade);
         exchangeMeso = 0;
 
         chr.get().getClient().getSession().write(MaplePacketCreator.TradeMessage(tradingslot, (byte) 0x08));
@@ -237,8 +237,8 @@ public class MapleTrade {
                 local.CompleteTrade();
                 partner.CompleteTrade();
                // Trade = "[交易记录完成] " + local.getChr().getName() + " 和 " + partner.getChr().getName() + " 交易完成。\r\n\r\n";
-              //  FileoutputUtil.packetLog("日志\\log\\交易记录\\"+local.getChr().getName()+".log",Trade);
-              //  FileoutputUtil.packetLog("日志\\log\\交易记录\\"+partner.getChr().getName()+".log",Trade);
+              //  FileoutputUtil.packetLog("logs/trades/"+local.getChr().getName()+".log",Trade);
+              //  FileoutputUtil.packetLog("logs/trades/"+partner.getChr().getName()+".log",Trade);
             } else {
                 // NOTE : IF accepted = other party but inventory is full, the item is lost.
                 partner.cancel(partner.getChr().getClient(), lz == 0 ? lz2 : lz);

@@ -134,7 +134,7 @@ public class HiredMerchantHandler {
                             return;
                         }
                         if (deletePackage(c.getPlayer().getId(), c.getPlayer().getAccountID(), pack.getPackageid())) {
-                            FileoutputUtil.logToFile_chr(c.getPlayer(), "日志/logs/Log_雇佣金币领取记录.txt", " 领回金币 " + pack.getMesos());
+                            FileoutputUtil.logToFile_chr(c.getPlayer(), "logs/audit/merchant-meso-claims.txt", " 领回金币 " + pack.getMesos());
                             c.getPlayer().gainMeso(pack.getMesos(), false);
                             c.getPlayer().setConversation(0);
                             c.getPlayer().dropMessage("领取金币" + pack.getMesos());
@@ -186,8 +186,8 @@ public class HiredMerchantHandler {
                         item_id += item.getItemId() + "(" + item.getQuantity() + "), ";
                         item_name += MapleItemInformationProvider.getInstance().getName(item.getItemId()) + "(" + item.getQuantity() + "), ";
                     }
-                    FileoutputUtil.logToFile_chr(c.getPlayer(), "日志/logs/Log_雇佣领取记录.txt", " 领回金币 " + pack.getMesos() + " 领回道具数量 " + pack.getItems().size() + " 道具 " + item_id);
-                    FileoutputUtil.logToFile_chr(c.getPlayer(), "日志/logs/Log_雇佣领取记录2.txt", " 领回金币 " + pack.getMesos() + " 领回道具数量 " + pack.getItems().size() + " 道具 " + item_name);
+                    FileoutputUtil.logToFile_chr(c.getPlayer(), "logs/audit/merchant-item-claims.txt", " 领回金币 " + pack.getMesos() + " 领回道具数量 " + pack.getItems().size() + " 道具 " + item_id);
+                    FileoutputUtil.logToFile_chr(c.getPlayer(), "logs/audit/merchant-item-claim-details.txt", " 领回金币 " + pack.getMesos() + " 领回道具数量 " + pack.getItems().size() + " 道具 " + item_name);
                 //    c.getPlayer().setLastHM(System.currentTimeMillis());
                 } else {
                     c.getPlayer().dropMessage(1, "发生未知错误.");

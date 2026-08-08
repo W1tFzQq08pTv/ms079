@@ -2,6 +2,7 @@ package handling.channel;
 
 import KinMS.db.AutoCherryMSEventManager;
 import client.MapleCharacter;
+import com.github.mrzhqiang.maplestory.config.ServerProperties;
 import client.MapleClient;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -76,8 +77,8 @@ public class ChannelServer implements Serializable {
 //        mapFactory.setChannel(channel);
 //    }
     @Inject
-    public ChannelServer(LoginServer loginServer, MapleCodecFactory codecFactory) {
-        this.mapFactory = new MapleMapFactory();
+    public ChannelServer(LoginServer loginServer, MapleCodecFactory codecFactory, ServerProperties properties) {
+        this.mapFactory = new MapleMapFactory(properties.getMobRespawnInterval(), properties.getMobDensityMultiplier());
         /*
          * this.channel = channel; mapFactory = new MapleMapFactory();
          * mapFactory.setChannel(channel);
@@ -248,6 +249,7 @@ public class ChannelServer implements Serializable {
 
     public final void setChannel(final int channel) {
         this.channel = channel;
+        this.serverHandler.setChannel(channel);
         this.mapFactory.setChannel(channel);
         INSTANCE_CACHED.put(channel, this);
         serverHandler.getLoginServer().addChannel(channel);

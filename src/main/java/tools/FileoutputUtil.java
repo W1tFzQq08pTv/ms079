@@ -30,22 +30,22 @@ public class FileoutputUtil {
 
     private static final SimpleDateFormat sdfT = new SimpleDateFormat("yyyy年MM月dd日HH時mm分ss秒");
     // Logging output file
-    public static final String fixdam_mg = "日志/logs/魔法伤害修正.rtf",
-            fixdam_ph = "日志/logs/物理伤害修正.rtf",
-            MobVac_log = "日志/logs/Log_吸怪.txt",
-            hack_log = "日志/logs/Log_怀疑外挂.rtf",
-            ban_log = "日志/logs/Log_封号.rtf",
-            Acc_Stuck = "日志/logs/Log_卡账号.rtf",
-            Login_Error = "日志/logs/Log_登录错误.rtf",
+    public static final String fixdam_mg = "logs/anticheat/magic-damage-corrections.rtf",
+            fixdam_ph = "logs/anticheat/physical-damage-corrections.rtf",
+            MobVac_log = "logs/anticheat/mob-vacuum.txt",
+            hack_log = "logs/anticheat/suspected-cheating.rtf",
+            ban_log = "logs/anticheat/bans.rtf",
+            Acc_Stuck = "logs/accounts/stuck-accounts.rtf",
+            Login_Error = "logs/accounts/login-errors.rtf",
             //Timer_Log = "Log_Timer_Except.rtf",
             //MapTimer_Log = "Log_MapTimer_Except.rtf",
-            IP_Log = "日志/logs/Log_账号IP.rtf",
+            IP_Log = "logs/accounts/ip-addresses.rtf",
             //GMCommand_Log = "Log_GMCommand.rtf",
-            Zakum_Log = "日志/logs/Log_扎昆.rtf",
-            Horntail_Log = "日志/logs/Log_暗黑龙王.rtf",
-            Pinkbean_Log = "日志/logs/Log_品克缤.rtf",
-            ScriptEx_Log = "日志/logs/Log_Script_脚本异常.rtf",
-            PacketEx_Log = "日志/logs/Log_Packet_封包异常.rtf" // I cba looking for every error, adding this back in.
+            Zakum_Log = "logs/bosses/zakum.rtf",
+            Horntail_Log = "logs/bosses/horntail.rtf",
+            Pinkbean_Log = "logs/bosses/pink-bean.rtf",
+            ScriptEx_Log = "logs/scripts/script-errors.rtf",
+            PacketEx_Log = "logs/packets/packet-errors.rtf" // I cba looking for every error, adding this back in.
             + "";
     // End
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

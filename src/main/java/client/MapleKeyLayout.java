@@ -30,14 +30,14 @@ import java.io.Serializable;
 
 import tools.data.output.MaplePacketLittleEndianWriter;
 
-import database.DatabaseConnection;
 import tools.Pair;
 
 public class MapleKeyLayout implements Serializable {
 
     private static final long serialVersionUID = 9179541993413738569L;
-    private boolean changed = false;
     private Map<Integer, Pair<Byte, Integer>> keymap;
+    private long changeVersion;
+    private long savedVersion;
 
     public MapleKeyLayout() {
         keymap = new HashMap<Integer, Pair<Byte, Integer>>();
@@ -47,12 +47,12 @@ public class MapleKeyLayout implements Serializable {
         keymap = keys;
     }
 
-    public final Map<Integer, Pair<Byte, Integer>> Layout() {
-        changed = true;
+    public synchronized final Map<Integer, Pair<Byte, Integer>> Layout() {
+        changeVersion++;
         return keymap;
     }
 
-    public final void writeData(final MaplePacketLittleEndianWriter mplew) {
+    public synchronized final void writeData(final MaplePacketLittleEndianWriter mplew) {
         Pair<Byte, Integer> binding;
         for (int x = 0; x < 90; x++) {
             binding = keymap.get(Integer.valueOf(x));
@@ -66,35 +66,45 @@ public class MapleKeyLayout implements Serializable {
         }
     }
 
-    public final void saveKeys(final int charid) throws SQLException {
-        if (!changed || keymap.size() == 0) {
-            return;
+    public synchronized final void changeKey(final int key, final byte type, final int action) {
+        if (type != 0) {
+            keymap.put(key, new Pair<Byte, Integer>(type, action));
+        } else {
+            keymap.remove(key);
         }
-        Connection con = DatabaseConnection.getConnection();
+        changeVersion++;
+    }
 
-        PreparedStatement ps = con.prepareStatement("DELETE FROM keymap WHERE characterid = ?");
-        ps.setInt(1, charid);
-        ps.execute();
-        ps.close();
+    public synchronized final long saveKeys(final Connection con, final int charid) throws SQLException {
+        final long version = changeVersion;
+        if (version == savedVersion) {
+            return version;
+        }
 
-        boolean first = true;
-        StringBuilder query = new StringBuilder();
+        try (PreparedStatement delete = con.prepareStatement("DELETE FROM keymap WHERE characterid = ?")) {
+            delete.setInt(1, charid);
+            delete.executeUpdate();
+        }
 
-        for (Entry<Integer, Pair<Byte, Integer>> keybinding : keymap.entrySet()) {
-            if (first) {
-                first = false;
-                query.append("INSERT INTO keymap VALUES (");
-            } else {
-                query.append(",(");
+        if (!keymap.isEmpty()) {
+            try (PreparedStatement insert = con.prepareStatement(
+                    "INSERT INTO keymap (characterid, `key`, `type`, `action`) VALUES (?, ?, ?, ?)")) {
+                for (Entry<Integer, Pair<Byte, Integer>> keybinding : keymap.entrySet()) {
+                    insert.setInt(1, charid);
+                    insert.setInt(2, keybinding.getKey());
+                    insert.setByte(3, keybinding.getValue().getLeft());
+                    insert.setInt(4, keybinding.getValue().getRight());
+                    insert.addBatch();
+                }
+                insert.executeBatch();
             }
-            query.append("DEFAULT,");
-            query.append(charid).append(",");
-            query.append(keybinding.getKey().intValue()).append(",");
-            query.append(keybinding.getValue().getLeft().byteValue()).append(",");
-            query.append(keybinding.getValue().getRight().intValue()).append(")");
         }
-        ps = con.prepareStatement(query.toString());
-        ps.execute();
-        ps.close();
+        return version;
+    }
+
+    public synchronized final void markSaved(final long version) {
+        if (version > savedVersion) {
+            savedVersion = version;
+        }
     }
 }

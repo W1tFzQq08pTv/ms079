@@ -66,7 +66,7 @@ public final class MapleMap {
     private final AtomicInteger spawnedMonstersOnMap = new AtomicInteger(0);
     private final Map<Integer, MaplePortal> portals = new HashMap<Integer, MaplePortal>();
     private MapleFootholdTree footholds = null;
-    private float monsterRate, recoveryRate;
+    private float monsterRate, monsterDensityMultiplier = 1.0f, recoveryRate;
     private MapleMapEffect mapEffect;
     private Integer channel;
     private short decHP = 0, createMobInterval = 9000;
@@ -196,6 +196,10 @@ public final class MapleMap {
 
     public final void setCreateMobInterval(final short createMobInterval) {
         this.createMobInterval = createMobInterval;
+    }
+
+    public final void setMonsterDensityMultiplier(final float monsterDensityMultiplier) {
+        this.monsterDensityMultiplier = Math.min(2.0f, Math.max(1.0f, monsterDensityMultiplier));
     }
 
     public final void setTimeLimit(final int timeLimit) {
@@ -536,8 +540,14 @@ public final class MapleMap {
 
         spawnedMonstersOnMap.decrementAndGet();
         removeMapObject(monster);
-        int dropOwner = monster.killBy(chr, lastSkill);
         broadcastMessage(MobPacket.killMonster(monster.getObjectId(), animation));
+        int dropOwner = chr == null ? 0 : chr.getId();
+        try {
+            dropOwner = monster.killBy(chr, lastSkill);
+        } catch (RuntimeException e) {
+            LOGGER.error("Monster reward settlement failed: map={}, monster={}, objectId={}, character={}",
+                    mapid, monster.getId(), monster.getObjectId(), dropOwner, e);
+        }
 
         if (monster.getBuffToGive() > -1) {
             final int buffid = monster.getBuffToGive();
@@ -2707,6 +2717,8 @@ public final class MapleMap {
         }
         if (fixedMob > 0) {
             maxRegularSpawn = fixedMob;
+        } else {
+            maxRegularSpawn = Math.min(spawnSize * 2, Math.round(maxRegularSpawn * monsterDensityMultiplier));
         }
         Collection<Spawns> newSpawn = new LinkedList<Spawns>();
         Collection<Spawns> newBossSpawn = new LinkedList<Spawns>();

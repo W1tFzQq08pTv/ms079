@@ -211,16 +211,17 @@ public class MapleShop {
             return;
         }
         final MapleItemInformationProvider ii = MapleItemInformationProvider.getInstance();
-        short slotMax = ii.getSlotMax(c, item.getItemId());
+        int slotMax = ii.getSlotMax(c, item.getItemId());
         final int skill = GameConstants.getMasterySkill(c.getPlayer().getJob());
 
         if (skill != 0) {
             slotMax += c.getPlayer().getSkillLevel(SkillFactory.getSkill(skill)) * 10;
         }
-        if (item.getQuantity() < slotMax) {
-            final int price = (int) Math.round(ii.getPrice(item.getItemId()) * (slotMax - item.getQuantity()));
+        final short refillQuantity = (short) Math.min(Short.MAX_VALUE, slotMax);
+        if (item.getQuantity() < refillQuantity) {
+            final int price = (int) Math.round(ii.getPrice(item.getItemId()) * (refillQuantity - item.getQuantity()));
             if (c.getPlayer().getMeso() >= price) {
-                item.setQuantity(slotMax);
+                item.setQuantity(refillQuantity);
                 c.getSession().write(MaplePacketCreator.updateInventorySlot(MapleInventoryType.USE, (Item) item, false));
                 c.getPlayer().gainMeso(-price, false, true, false);
                 c.getSession().write(MaplePacketCreator.confirmShopTransaction((byte) 0x8));
@@ -241,8 +242,7 @@ public class MapleShop {
         MapleShop ret = null;
         int shopId;
 
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement(isShopId ? "SELECT * FROM shops WHERE shopid = ?" : "SELECT * FROM shops WHERE npcid = ?");
 
             ps.setInt(1, id);

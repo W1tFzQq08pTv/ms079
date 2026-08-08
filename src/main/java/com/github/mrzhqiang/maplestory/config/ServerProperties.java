@@ -40,6 +40,8 @@ public final class ServerProperties {
     private final int dropRate;
     private final int bossDropRate;
     private final int cashRate;
+    private final int mobRespawnInterval;
+    private final float mobDensityMultiplier;
 
     private final int worldFlags;
 
@@ -79,6 +81,10 @@ public final class ServerProperties {
         this.dropRate = Numbers.ofInt(properties.getProperty("server.world.rate.drop", "1"));
         this.bossDropRate = Numbers.ofInt(properties.getProperty("server.world.rate.drop.boss", "1"));
         this.cashRate = Numbers.ofInt(properties.getProperty("server.world.rate.cash", "1"));
+        this.mobRespawnInterval = Math.min(Short.MAX_VALUE,
+                Math.max(3000, Numbers.ofInt(properties.getProperty("server.world.mob-respawn-interval", "9000"))));
+        this.mobDensityMultiplier = Math.min(2.0f,
+                Math.max(1.0f, Numbers.ofFloat(properties.getProperty("server.world.mob-density-multiplier", "1.0"))));
         this.worldFlags = Numbers.ofInt(properties.getProperty("server.world.flags", "0"));
         this.mallPort = Numbers.ofInt(properties.getProperty("server.mall.port", "8600"));
         this.debug = Boolean.parseBoolean(properties.getProperty("server.debug.enabled", "false"));
@@ -115,6 +121,14 @@ public final class ServerProperties {
 
     public int getCashRate() {
         return cashRate;
+    }
+
+    public int getMobRespawnInterval() {
+        return mobRespawnInterval;
+    }
+
+    public float getMobDensityMultiplier() {
+        return mobDensityMultiplier;
     }
 
     public String getName() {

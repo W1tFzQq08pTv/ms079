@@ -757,7 +757,7 @@ public class AdminCommand {
             player.dropMessage("已经收到点卷" + amount + "点");
             String msg = "[GM 密语] GM " + c.getPlayer().getName() + " 給了 " + player.getName() + " 点卷 " + amount + "点";
             // World.Broadcast.broadcastGMMessage(MaplePacketCreator.serverNotice(6, msg).getBytes());
-            FileoutputUtil.logToFile("日志/Logs/Data/给予点卷.txt", "\r\n " + FileoutputUtil.NowTime() + " GM " + c.getPlayer().getName() + " 给了 " + player.getName() + " 点卷 " + amount + "点");
+            FileoutputUtil.logToFile("logs/audit/cash-grants.txt", "\r\n " + FileoutputUtil.NowTime() + " GM " + c.getPlayer().getName() + " 给了 " + player.getName() + " 点卷 " + amount + "点");
             return 1;
         }
 

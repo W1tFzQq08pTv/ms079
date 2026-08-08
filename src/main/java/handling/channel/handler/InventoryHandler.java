@@ -77,13 +77,10 @@ public class InventoryHandler {
             return;
         }
         MapleCharacter player = c.getPlayer();
-        player.setCurrenttime(System.currentTimeMillis());
-        if (player.getCurrenttime() - player.getLasttime() < player.get防止复制时间()) {
-            c.getPlayer().dropMessage(5, "请慢点使用.不然会掉线哟！");
+        if (!player.canMoveItem()) {
             c.getSession().write(MaplePacketCreator.enableActions());
             return;
         }
-        player.setLasttime(System.currentTimeMillis());
         c.getPlayer().updateTick(slea.readInt());
         final MapleInventoryType type = MapleInventoryType.getByType(slea.readByte()); //04
         final short src = slea.readShort();                                            //01 00
@@ -241,10 +238,7 @@ public class InventoryHandler {
             return;
         }
         final byte action = (byte) (slea.readByte() + 1);
-        short quest = slea.readShort();
-        if (quest < 0) { //questid 50000 and above, WILL cast to negative, this was tested.
-            quest += 65536; //probably not the best fix, but whatever
-        }
+        final int quest = slea.readShort() & 0xFFFF;
         if (chr == null) {
             return;
         }
@@ -318,7 +312,13 @@ public class InventoryHandler {
             return;
         }
         if (!FieldLimitType.PotionUse.check(chr.getMap().getFieldLimit()) || chr.getMapId() == 610030600) { //cwk quick hack
-            if (MapleItemInformationProvider.getInstance().getItemEffect(toUse.getItemId()).applyTo(chr)) {
+            final MapleStatEffect effect = MapleItemInformationProvider.getInstance().getItemEffect(toUse.getItemId());
+            if (effect == null) {
+                LOGGER.warn("Missing item effect: itemId={}, characterId={}, slot={}", itemId, chr.getId(), slot);
+                c.getSession().write(MaplePacketCreator.enableActions());
+                return;
+            }
+            if (effect.applyTo(chr)) {
                 MapleInventoryManipulator.removeFromSlot(c, MapleInventoryType.USE, slot, (short) 1, false);
                 if (chr.getMap().getConsumeItemCoolTime() > 0) {
                     chr.setNextConsume(time + (chr.getMap().getConsumeItemCoolTime() * 1000));
@@ -345,7 +345,13 @@ public class InventoryHandler {
             return;
         }
         //  if (!FieldLimitType.PotionUse.check(chr.getMap().getFieldLimit())) {
-        if (MapleItemInformationProvider.getInstance().getItemEffect(toUse.getItemId()).applyReturnScroll(chr)) {
+        final MapleStatEffect effect = MapleItemInformationProvider.getInstance().getItemEffect(toUse.getItemId());
+        if (effect == null) {
+            LOGGER.warn("Missing return scroll effect: itemId={}, characterId={}, slot={}", itemId, chr.getId(), slot);
+            c.getSession().write(MaplePacketCreator.enableActions());
+            return;
+        }
+        if (effect.applyReturnScroll(chr)) {
             MapleInventoryManipulator.removeFromSlot(c, MapleInventoryType.USE, slot, (short) 1, false);
         } else {
             c.getSession().write(MaplePacketCreator.enableActions());
@@ -1364,7 +1370,7 @@ public class InventoryHandler {
                             break;
                         }
                         case 0x2000: // hp
-                            short maxhp = playerst.getMaxHp();
+                            int maxhp = playerst.getMaxHp();
 
                             if (job == 0) { // Beginner
                                 maxhp += Randomizer.rand(8, 12);
@@ -1407,14 +1413,14 @@ public class InventoryHandler {
                             } else { // GameMaster
                                 maxhp += Randomizer.rand(50, 100);
                             }
-                            maxhp = (short) Math.min(30000, Math.abs(maxhp));
+                            final short updatedMaxHp = (short) Math.min(30000, maxhp);
                             c.getPlayer().setHpApUsed((short) (c.getPlayer().getHpApUsed() + 1));
-                            playerst.setMaxHp(maxhp);
-                            statupdate.add(new Pair<MapleStat, Integer>(MapleStat.MAXHP, (int) maxhp));
+                            playerst.setMaxHp(updatedMaxHp);
+                            statupdate.add(new Pair<MapleStat, Integer>(MapleStat.MAXHP, (int) updatedMaxHp));
                             break;
 
                         case 0x8000: // mp
-                            short maxmp = playerst.getMaxMp();
+                            int maxmp = playerst.getMaxMp();
 
                             if (job == 0) { // Beginner
                                 maxmp += Randomizer.rand(6, 8);
@@ -1443,10 +1449,10 @@ public class InventoryHandler {
                             } else { // GameMaster
                                 maxmp += Randomizer.rand(50, 100);
                             }
-                            maxmp = (short) Math.min(30000, Math.abs(maxmp));
+                            final short updatedMaxMp = (short) Math.min(30000, maxmp);
                             c.getPlayer().setHpApUsed((short) (c.getPlayer().getHpApUsed() + 1));
-                            playerst.setMaxMp(maxmp);
-                            statupdate.add(new Pair<MapleStat, Integer>(MapleStat.MAXMP, (int) maxmp));
+                            playerst.setMaxMp(updatedMaxMp);
+                            statupdate.add(new Pair<MapleStat, Integer>(MapleStat.MAXMP, (int) updatedMaxMp));
                             break;
                     }
                     switch (apfrom) { // AP from

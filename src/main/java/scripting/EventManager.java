@@ -327,7 +327,7 @@ public class EventManager {
             eim.registerSquad(squad, map, Integer.parseInt(bossid));
         } catch (Exception ex) {
             LOGGER.debug(new StringBuilder().append("Event name : ").append(this.name).append(", method Name : setup-squad:\n").append(ex).toString());
-            FileoutputUtil.log("日志\\log\\Script_Except.log", new StringBuilder().append("Event name : ").append(this.name).append(", method Name : setup-squad:\n").append(ex).toString());
+            FileoutputUtil.log("logs/scripts/script-exceptions.log", new StringBuilder().append("Event name : ").append(this.name).append(", method Name : setup-squad:\n").append(ex).toString());
         }
     }
 

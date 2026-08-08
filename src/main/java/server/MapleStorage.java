@@ -49,40 +49,34 @@ public class MapleStorage implements Serializable {
     }
 
     public static int create(int id) throws SQLException {
-        Connection con = DatabaseConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement("INSERT INTO storages (accountid, slots, meso) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("INSERT INTO storages (accountid, slots, meso) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
         ps.setInt(1, id);
         ps.setInt(2, 4);
         ps.setInt(3, 0);
         ps.executeUpdate();
 
         int storageid;
-        ResultSet rs = ps.getGeneratedKeys();
+        try (ResultSet rs = ps.getGeneratedKeys()) {
         if (rs.next()) {
             storageid = rs.getInt(1);
-            ps.close();
-            rs.close();
             return storageid;
         }
-        ps.close();
-        rs.close();
+        }
+        }
         throw new DatabaseException("Inserting char failed.");
     }
 
     public static MapleStorage loadStorage(int id) {
         MapleStorage ret = null;
         int storeId;
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("SELECT * FROM storages WHERE accountid = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT * FROM storages WHERE accountid = ?")) {
             ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();
-
+            try (ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 storeId = rs.getInt("storageid");
                 ret = new MapleStorage(storeId, rs.getByte("slots"), rs.getInt("meso"), id);
-                rs.close();
-                ps.close();
 
                 for (Pair<IItem, MapleInventoryType> mit : ItemLoader.STORAGE.loadItems(false, id).values()) {
                     ret.items.add(mit.getLeft());
@@ -90,8 +84,7 @@ public class MapleStorage implements Serializable {
             } else {
                 storeId = create(id);
                 ret = new MapleStorage(storeId, (byte) 4, 0, id);
-                rs.close();
-                ps.close();
+            }
             }
         } catch (SQLException ex) {
             LOGGER.error("Error loading storage" + ex);

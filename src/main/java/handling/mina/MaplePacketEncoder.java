@@ -61,7 +61,7 @@ public class MaplePacketEncoder implements ProtocolEncoder {
                 if (packetLen <= 50000) {
                     String RecvTo = Recv + HexTool.toString(inputInitialPacket) + "\r\n" + HexTool.toStringFromAscii(inputInitialPacket);
                     if (show) {
-                        FileoutputUtil.packetLog("日志\\log\\服务端封包.log", RecvTo);
+                        FileoutputUtil.packetLog("logs/packets/server-packets.log", RecvTo);
                         LOGGER.debug(RecvTo);
                     } //log.info("服务端发送" + "\r\n" + HexTool.toString(inputInitialPacket));
                 } else {

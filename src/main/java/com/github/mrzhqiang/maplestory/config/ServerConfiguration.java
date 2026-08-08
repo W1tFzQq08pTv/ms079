@@ -20,7 +20,9 @@ public final class ServerConfiguration extends AbstractModule {
         // inner instance
     }
 
-    private static final String CONFIG_FILE = "服务端配置.ini";
+    private static final String DEFAULT_CONFIG_FILE = "config/server.properties";
+    private static final String CONFIG_FILE_PROPERTY = "ms079.config";
+    private static final String CONFIG_FILE_ENVIRONMENT = "MS079_CONFIG_FILE";
 
     /**
      * 主要是提供给数据库配置使用，其他地方暂时用不到。
@@ -30,12 +32,21 @@ public final class ServerConfiguration extends AbstractModule {
     @Provides
     static Properties provideProperties() {
         Properties properties = new Properties();
-        try (Reader reader = new FileReader(CONFIG_FILE)) {
+        String configFile = resolveConfigFile();
+        try (Reader reader = new FileReader(configFile)) {
             properties.load(reader);
         } catch (Exception e) {
-            throw new RuntimeException(String.format("加载 %s 文件出现问题。", CONFIG_FILE), e);
+            throw new RuntimeException(String.format("加载 %s 文件出现问题。", configFile), e);
         }
         return properties;
+    }
+
+    static String resolveConfigFile() {
+        String configured = System.getProperty(CONFIG_FILE_PROPERTY);
+        if (configured == null || configured.trim().isEmpty()) {
+            configured = System.getenv(CONFIG_FILE_ENVIRONMENT);
+        }
+        return configured == null || configured.trim().isEmpty() ? DEFAULT_CONFIG_FILE : configured;
     }
 
 }

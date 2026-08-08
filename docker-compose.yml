@@ -1,0 +1,40 @@
+services:
+  ms079-mysql:
+    image: ${MYSQL_IMAGE}
+    container_name: ${MYSQL_CONTAINER_NAME}
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "${MYSQL_PORT}:3306"
+      - "${CHANNEL_PORT_RANGE}:7575-7578"
+      - "${CASHSHOP_PORT}:8600"
+      - "${LOGIN_PORT}:9595"
+    volumes:
+      - ${MYSQL_DATA_DIR}:/var/lib/mysql
+      - ${MYSQL_HEALTH_INIT_SQL}:/docker-entrypoint-initdb.d/00-healthcheck.sql:ro
+      - ${MYSQL_INIT_SQL}:/docker-entrypoint-initdb.d/01-ms079.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--silent", "--host=127.0.0.1", "--user=healthcheck"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+  ms079-server:
+    build:
+      context: .
+      target: ${SERVER_BUILD_TARGET}
+    image: ${SERVER_IMAGE}
+    container_name: ${SERVER_CONTAINER_NAME}
+    network_mode: "service:ms079-mysql"
+    depends_on:
+      ms079-mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ${WZ_DATA_DIR}:/app/wz:ro
+      - ${SCRIPT_DIR}:/app/scripts:ro
+      - ${SERVER_CONFIG_FILE}:/app/config/server.properties:ro
+      - ${SERVER_LOG_DIR}:/app/logs

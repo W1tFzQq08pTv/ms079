@@ -90,6 +90,10 @@ public class MaplePet implements Serializable {
     }
 
     private static final long serialVersionUID = 9179541993413738569L;
+    private static final int FULL_PICKUP_FLAG_MASK = PetFlag.ITEM_PICKUP.getValue()
+            | PetFlag.EXPAND_PICKUP.getValue()
+            | PetFlag.AUTO_PICKUP.getValue()
+            | PetFlag.LEFTOVER_PICKUP.getValue();
     private String name;
     private int Fh = 0, stance = 0, uniqueid, petitemid, secondsLeft = 0;
     private Vector pos;
@@ -112,14 +116,12 @@ public class MaplePet implements Serializable {
         try {
             final MaplePet ret = new MaplePet(itemid, petid, inventorypos);
 
-            Connection con = DatabaseConnection.getConnection(); // Get a connection to the database
-            PreparedStatement ps = con.prepareStatement("SELECT * FROM pets WHERE petid = ?"); // Get pet details..
+            try (Connection con = DatabaseConnection.getConnection();
+                 PreparedStatement ps = con.prepareStatement("SELECT * FROM pets WHERE petid = ?")) {
             ps.setInt(1, petid);
 
-            final ResultSet rs = ps.executeQuery();
+            try (ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) {
-                rs.close();
-                ps.close();
                 return null;
             }
 
@@ -128,13 +130,13 @@ public class MaplePet implements Serializable {
             ret.setLevel(rs.getByte("level"));
             ret.setFullness(rs.getByte("fullness"));
             ret.setSecondsLeft(rs.getInt("seconds"));
-            ret.setFlags(rs.getShort("flags"));
-            ret.changed = false;
-
-            rs.close();
-            ps.close();
+            final short storedFlags = rs.getShort("flags");
+            ret.flags = withFullPickupFlags(storedFlags);
+            ret.changed = ret.flags != storedFlags;
 
             return ret;
+            }
+            }
         } catch (SQLException ex) {
             Logger.getLogger(MaplePet.class.getName()).log(Level.SEVERE, null, ex);
             return null;
@@ -145,8 +147,8 @@ public class MaplePet implements Serializable {
         if (!changed) {
             return;
         }
-        try {
-            final PreparedStatement ps = DatabaseConnection.getConnection().prepareStatement("UPDATE pets SET name = ?, level = ?, closeness = ?, fullness = ?, seconds = ?, flags = ? WHERE petid = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("UPDATE pets SET name = ?, level = ?, closeness = ?, fullness = ?, seconds = ?, flags = ? WHERE petid = ?")) {
             ps.setString(1, name); // Set name
             ps.setByte(2, level); // Set Level
             ps.setShort(3, closeness); // Set Closeness
@@ -155,7 +157,6 @@ public class MaplePet implements Serializable {
             ps.setShort(6, flags);
             ps.setInt(7, uniqueid); // Set ID
             ps.executeUpdate(); // Execute statement
-            ps.close();
             changed = false;
         } catch (final SQLException ex) {
             ex.printStackTrace();
@@ -169,9 +170,9 @@ public class MaplePet implements Serializable {
         if (uniqueid <= -1) { //wah
             uniqueid = MapleInventoryIdentifier.getInstance();
         } 
-        short ret1 = MapleItemInformationProvider.getInstance().getPetFlagInfo(itemid);    
-        try { // Commit to db first
-            PreparedStatement pse = DatabaseConnection.getConnection().prepareStatement("INSERT INTO pets (petid, name, level, closeness, fullness, seconds, flags) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        short ret1 = withFullPickupFlags(MapleItemInformationProvider.getInstance().getPetFlagInfo(itemid));
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement pse = con.prepareStatement("INSERT INTO pets (petid, name, level, closeness, fullness, seconds, flags) VALUES (?, ?, ?, ?, ?, ?, ?)")) { // Commit to db first
             pse.setInt(1, uniqueid);
             pse.setString(2, name);
             pse.setByte(3, (byte) level);
@@ -180,7 +181,6 @@ public class MaplePet implements Serializable {
             pse.setInt(6, secondsLeft);
             pse.setShort(7, (short) ret1); //flags
             pse.executeUpdate();
-            pse.close();
         } catch (final SQLException ex) {
             ex.printStackTrace();
             return null;
@@ -261,6 +261,10 @@ public class MaplePet implements Serializable {
 
     public final short getFlags() {
         return flags;
+    }
+
+    static short withFullPickupFlags(final int existingFlags) {
+        return (short) (existingFlags | FULL_PICKUP_FLAG_MASK);
     }
 
     public final void setFlags(final int fffh) {

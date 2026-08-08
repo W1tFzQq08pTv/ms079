@@ -19,8 +19,7 @@ public final class Effects {
     }
 
     public static MapleStatEffect ofItem(int id, WzElement<?> level) {
-        MapleStatEffect effect = ofSkill(id, false, level);
-        effect.setSkill(false);
+        MapleStatEffect effect = ofEffect(id, false, level, false);
 
         if (!effect.isSkill() && effect.getDuration() > -1) {
             effect.setOverTime(true);
@@ -29,10 +28,14 @@ public final class Effects {
     }
 
     public static MapleStatEffect ofSkill(int id, boolean overTime, WzElement<?> level) {
+        return ofEffect(id, overTime, level, true);
+    }
+
+    private static MapleStatEffect ofEffect(int id, boolean overTime, WzElement<?> level, boolean skill) {
         MapleStatEffect effect = new MapleStatEffect();
         effect.setSourceId(id);
-        effect.setSkill(true);
-        byte lv = Byte.parseByte(level.name());
+        effect.setSkill(skill);
+        byte lv = skill ? Byte.parseByte(level.name()) : 1;
         effect.setLevel(lv);
         effect.setDuration(Elements.findInt(level, "time", -1));
         effect.setHp((short) Elements.findInt(level, "hp"));
@@ -42,7 +45,10 @@ public final class Effects {
         effect.setProp((short) Elements.findInt(level, "prop"));
         effect.setCooldown(Elements.findInt(level, "cooltime"));
         effect.setMorphId(Elements.findInt(level, "morph"));
-        effect.setMobCount((byte) Elements.findInt(level, "mobCount"));
+        // Attack skills without an explicit mobCount are single-target in v079.
+        // Keeping the item default at zero avoids turning ordinary consumables
+        // into attack effects.
+        effect.setMobCount((byte) Elements.findInt(level, "mobCount", skill ? 1 : 0));
         // fixme item 相关的设置，怕出问题，先全部在这边实现，待以后测试
 
         effect.setHpR(Elements.findInt(level, "hpR") / 100.0);

@@ -63,7 +63,10 @@ public class InterServerHandler {
         //c.getSession().write(MaplePacketCreator.getChannelChange(InetAddress.getByName(socket[0]), Integer.parseInt(CashShopServer.getIP().split(":")[1])));
         chr.saveToDB(false, false);
         chr.getMap().removePlayer(chr);
-        c.getSession().write(MaplePacketCreator.getChannelChange(c, Integer.parseInt(CashShopServer.getIP().split(":")[1])));
+        final int cashShopPort = Integer.parseInt(CashShopServer.getIP().split(":")[1]);
+        LOGGER.info("Cash-shop transfer requested: characterId={}, accountId={}, targetPort={}",
+                chr.getId(), chr.getAccountID(), cashShopPort);
+        c.getSession().write(MaplePacketCreator.getChannelChange(c, cashShopPort));
         c.getPlayer().expirationTask(true, false);
         c.setPlayer(null);
         c.setReceiving(false);
@@ -167,9 +170,8 @@ public class InterServerHandler {
         // c.updateLoginState(MapleClient.LOGIN_SERVER_TRANSITION, c.getSessionIPAddress());
         channelServer.addPlayer(player);
         c.getSession().write(MaplePacketCreator.getCharInfo(player));
-        if (player.isGM()) {
-            SkillFactory.getSkill(9001004).getEffect(1).applyTo(player);
-        }
+        // Keep staff visible by default so they can receive monster control and
+        // play normally. Staff can still opt into hide mode with the hide command.
         c.getSession().write(MaplePacketCreator.temporaryStats_Reset()); // .
         player.getMap().addPlayer(player);
 

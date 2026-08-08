@@ -41,11 +41,21 @@
 
         <fileSet>
             <directory>
-                ${project.basedir}/脚本/
+                ${project.basedir}/scripts/
             </directory>
-            <outputDirectory>脚本</outputDirectory>
+            <outputDirectory>scripts</outputDirectory>
             <includes>
                 <include>**/*</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>
+                ${project.basedir}/config/
+            </directory>
+            <outputDirectory>config</outputDirectory>
+            <includes>
+                <include>*.properties</include>
             </includes>
         </fileSet>
 

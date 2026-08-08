@@ -202,7 +202,7 @@ public final class Skills {
                     case 4321000: // not found
                     case 4331001: // not found
                     case 3101005: // or is this really hack
-                        LOGGER.error("触发硬编码的 action 检测");
+                        LOGGER.debug("技能 {} 使用硬编码的 action 兼容规则", skill.getId());
                         isAction = true;
                         break;
                 }

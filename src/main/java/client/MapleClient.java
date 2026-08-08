@@ -155,18 +155,16 @@ public class MapleClient implements Serializable {
 
     private List<CharNameAndId> loadCharactersInternal(int serverId) {
         List<CharNameAndId> chars = new LinkedList<CharNameAndId>();
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("SELECT id, name FROM characters WHERE accountid = ? AND world = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT id, name FROM characters WHERE accountid = ? AND world = ?")) {
             ps.setInt(1, accId);
             ps.setInt(2, serverId);
 
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                chars.add(new CharNameAndId(rs.getString("name"), rs.getInt("id")));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    chars.add(new CharNameAndId(rs.getString("name"), rs.getInt("id")));
+                }
             }
-            rs.close();
-            ps.close();
         } catch (SQLException e) {
             LOGGER.error("error loading characters internal" + e);
         }
@@ -691,29 +689,22 @@ public class MapleClient implements Serializable {
     }
 
     public final void updateLoginState(final int newstate, final String SessionID) { // TODO hide?
-        if (SessionID != null) {
-            try {
-                Connection con = DatabaseConnection.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE accounts SET loggedin = ?, SessionIP = ?, lastlogin = CURRENT_TIMESTAMP() WHERE id = ?");
+        final String sql = SessionID != null
+                ? "UPDATE accounts SET loggedin = ?, SessionIP = ?, lastlogin = CURRENT_TIMESTAMP() WHERE id = ?"
+                : "UPDATE accounts SET loggedin = ?, lastlogin = CURRENT_TIMESTAMP() WHERE id = ?";
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            if (SessionID != null) {
                 ps.setInt(1, newstate);
                 ps.setString(2, SessionID);
                 ps.setInt(3, getAccID());
-                ps.executeUpdate();
-                ps.close();
-            } catch (SQLException e) {
-                LOGGER.error("error updating login state" + e);
-            }
-        } else {
-            try {
-                Connection con = DatabaseConnection.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE accounts SET loggedin = ?, lastlogin = CURRENT_TIMESTAMP() WHERE id = ?");
+            } else {
                 ps.setInt(1, newstate);
                 ps.setInt(2, getAccID());
-                ps.executeUpdate();
-                ps.close();
-            } catch (SQLException e) {
-                LOGGER.error("error updating login state" + e);
             }
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("error updating login state", e);
         }
         if (newstate == MapleClient.LOGIN_NOTLOGGEDIN || newstate == MapleClient.LOGIN_WAITING) {
             loggedIn = false;
@@ -757,33 +748,30 @@ public class MapleClient implements Serializable {
     }
 
     public final byte getLoginState() { // TODO hide?
-        Connection con = DatabaseConnection.getConnection();
-        try {
-            PreparedStatement ps;
-            ps = con.prepareStatement("SELECT loggedin, lastlogin, `birthday` + 0 AS `bday` FROM accounts WHERE id = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT loggedin, `birthday` + 0 AS `bday`, "
+                     + "lastlogin < DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 SECOND) AS transition_timed_out "
+                     + "FROM accounts WHERE id = ?")) {
             ps.setInt(1, getAccID());
-            ResultSet rs = ps.executeQuery();
-            if (!rs.next()) {
-                ps.close();
-                throw new DatabaseException("Everything sucks");
-            }
-            birthday = rs.getInt("bday");
-            byte state = rs.getByte("loggedin");
-
-            if (state == MapleClient.LOGIN_SERVER_TRANSITION || state == MapleClient.CHANGE_CHANNEL) {
-                if (rs.getTimestamp("lastlogin").getTime() + 20000 < System.currentTimeMillis()) { // connecting to chanserver timeout
-                    state = MapleClient.LOGIN_NOTLOGGEDIN;
-                    updateLoginState(state, getSessionIPAddress());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new DatabaseException("No account found while reading login state");
                 }
+                birthday = rs.getInt("bday");
+                byte state = rs.getByte("loggedin");
+
+                if (state == MapleClient.LOGIN_SERVER_TRANSITION || state == MapleClient.CHANGE_CHANNEL) {
+                    // Keep both sides of the timeout comparison in MySQL. The database and
+                    // game containers may use different time zones, while TIMESTAMP values
+                    // do not carry their original zone into the JVM.
+                    if (rs.getBoolean("transition_timed_out")) { // connecting to chanserver timeout
+                        state = MapleClient.LOGIN_NOTLOGGEDIN;
+                        updateLoginState(state, getSessionIPAddress());
+                    }
+                }
+                loggedIn = state == MapleClient.LOGIN_LOGGEDIN;
+                return state;
             }
-            rs.close();
-            ps.close();
-            if (state == MapleClient.LOGIN_LOGGEDIN) {
-                loggedIn = true;
-            } else {
-                loggedIn = false;
-            }
-            return state;
         } catch (SQLException e) {
             loggedIn = false;
             throw new DatabaseException("error getting login state", e);
@@ -975,26 +963,23 @@ public class MapleClient implements Serializable {
     }
 
     public final boolean CheckIPAddress() {
-        try {
-            final PreparedStatement ps = DatabaseConnection.getConnection().prepareStatement("SELECT SessionIP FROM accounts WHERE id = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT SessionIP FROM accounts WHERE id = ?")) {
             ps.setInt(1, this.accId);
-            final ResultSet rs = ps.executeQuery();
+            try (ResultSet rs = ps.executeQuery()) {
+                boolean canlogin = false;
 
-            boolean canlogin = false;
+                if (rs.next()) {
+                    final String sessionIP = rs.getString("SessionIP");
 
-            if (rs.next()) {
-                final String sessionIP = rs.getString("SessionIP");
-
-                if (sessionIP != null) { // Probably a login proced skipper?
-                    canlogin = getSessionIPAddress().equals(sessionIP.split(":")[0]);
+                    if (sessionIP != null) { // Probably a login proced skipper?
+                        canlogin = getSessionIPAddress().equals(sessionIP.split(":")[0]);
+                    }
                 }
+                return canlogin;
             }
-            rs.close();
-            ps.close();
-
-            return canlogin;
         } catch (final SQLException e) {
-            LOGGER.debug("Failed in checking IP address for client.");
+            LOGGER.warn("Failed in checking IP address for account {}", accId, e);
         }
         return true;
     }
@@ -1258,24 +1243,22 @@ public class MapleClient implements Serializable {
         if (charslots != DEFAULT_CHARSLOT) {
             return charslots; //save a sql
         }
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("SELECT * FROM character_slots WHERE accid = ? AND worldid = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT * FROM character_slots WHERE accid = ? AND worldid = ?")) {
             ps.setInt(1, accId);
             ps.setInt(2, world);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                charslots = rs.getInt("charslots");
-            } else {
-                PreparedStatement psu = con.prepareStatement("INSERT INTO character_slots (accid, worldid, charslots) VALUES (?, ?, ?)");
-                psu.setInt(1, accId);
-                psu.setInt(2, world);
-                psu.setInt(3, charslots);
-                psu.executeUpdate();
-                psu.close();
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    charslots = rs.getInt("charslots");
+                } else {
+                    try (PreparedStatement psu = con.prepareStatement("INSERT INTO character_slots (accid, worldid, charslots) VALUES (?, ?, ?)")) {
+                        psu.setInt(1, accId);
+                        psu.setInt(2, world);
+                        psu.setInt(3, charslots);
+                        psu.executeUpdate();
+                    }
+                }
             }
-            rs.close();
-            ps.close();
         } catch (SQLException sqlE) {
             sqlE.printStackTrace();
         }

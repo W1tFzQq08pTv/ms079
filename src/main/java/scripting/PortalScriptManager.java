@@ -30,8 +30,6 @@ import javax.script.Compilable;
 import javax.script.CompiledScript;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineFactory;
-import javax.script.ScriptEngineManager;
 
 import client.MapleClient;
 import java.io.*;
@@ -47,7 +45,6 @@ public class PortalScriptManager {
 
     private static final PortalScriptManager instance = new PortalScriptManager();
     private final Map<String, PortalScript> scripts = new HashMap<String, PortalScript>();
-    private final static ScriptEngineFactory sef = new ScriptEngineManager().getEngineByName("javascript").getFactory();
 
     public final static PortalScriptManager getInstance() {
         return instance;
@@ -59,15 +56,16 @@ public class PortalScriptManager {
             return scripts.get(scriptName);
         }
 
-        final File scriptFile = new File("脚本/传送点/" + scriptName + ".js");
+        final File scriptFile = new File("scripts/portals/" + scriptName + ".js");
         if (!scriptFile.exists()) {
             //scripts.put(scriptName, null);
             return null;
         }
 
         InputStream fr = null;
-        final ScriptEngine portal = sef.getScriptEngine();
+        final ScriptEngine portal;
         try {
+            portal = AbstractScriptManager.createScriptEngine();
             fr = new FileInputStream(scriptFile);
             BufferedReader bf = new BufferedReader(new InputStreamReader(fr, EncodingDetect.getJavaEncode(scriptFile)));
             CompiledScript compiled = ((Compilable) portal).compile(bf);
@@ -75,6 +73,7 @@ public class PortalScriptManager {
         } catch (final Exception e) {
             LOGGER.error("Error executing Portalscript: " + scriptName + ":" + e);
             FileoutputUtil.log(FileoutputUtil.ScriptEx_Log, "Error executing Portal script. (" + scriptName + ") " + e);
+            return null;
         } finally {
             if (fr != null) {
                 try {
@@ -100,13 +99,13 @@ public class PortalScriptManager {
                 }
             } catch (Exception e) {
                 //LOGGER.error("执行地图脚本过程中发生错误.请检查Portal为:( " + portal.getScriptName() + ".js)的文件." + e);
-                FileoutputUtil.log("log\\Script_Except.log", "执行地图脚本过程中发生错误.请检查Portal为:( " + portal.getScriptName() + ".js)的文件.\r\n错误信息:" + e);
+                FileoutputUtil.log("logs/scripts/portal-exceptions.log", "执行地图脚本过程中发生错误.请检查Portal为:( " + portal.getScriptName() + ".js)的文件.\r\n错误信息:" + e);
             }
         } else {
             if (c.getPlayer().isAdmin()) {
                 c.getPlayer().dropMessage(5, "未找到Portal为:(" + portal.getScriptName() + ".js)的文件 在地图 " + c.getPlayer().getMapId() + " - " + c.getPlayer().getMap().getMapName());
             }
-            FileoutputUtil.log("log\\Script_Except.log", "执行地图脚本过程中发生错误.未找到Portal为:(" + portal.getScriptName() + ".js)的文件 在地图 " + c.getPlayer().getMapId() + " - " + c.getPlayer().getMap().getMapName());
+            FileoutputUtil.log("logs/scripts/portal-exceptions.log", "执行地图脚本过程中发生错误.未找到Portal为:(" + portal.getScriptName() + ".js)的文件 在地图 " + c.getPlayer().getMapId() + " - " + c.getPlayer().getMap().getMapName());
         }
     }
 

@@ -8,3 +8,10 @@ target
 build
 
 /logs
+
+# Runtime output
+/.env
+
+# Local Docker database state
+/docker/mysql/data/
+/docker/mysql/backups/
