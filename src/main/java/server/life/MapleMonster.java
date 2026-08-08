@@ -339,9 +339,9 @@ public class MapleMonster extends AbstractLoadedMapleLife {
             final Integer holySymbol = attacker.getBuffedValue(MapleBuffStat.HOLY_SYMBOL);
             if (holySymbol != null) {
                 if (numExpSharers == 1) {
-                    exp *= 1.0 + (holySymbol.doubleValue() / 500.0);
+                    exp = (int) Math.min(Integer.MAX_VALUE, exp * (1.0 + (holySymbol.doubleValue() / 500.0)));
                 } else {
-                    exp *= 1.0 + (holySymbol.doubleValue() / 100.0);
+                    exp = (int) Math.min(Integer.MAX_VALUE, exp * (1.0 + (holySymbol.doubleValue() / 100.0)));
                 }
             }
             if (attacker.hasDisease(MapleDisease.CURSE)) {
@@ -365,7 +365,7 @@ public class MapleMonster extends AbstractLoadedMapleLife {
             }
             int wedding_EXP = 0;
             if (attacker.getMarriageId() > 0 && attacker.getMap().getCharacterById_InMap(attacker.getMarriageId()) != null) {
-                wedding_EXP += (exp / 100.0d) * 10.0d;
+                wedding_EXP = (int) ((exp / 100.0d) * 10.0d);
             }
             attacker.gainExpMonster(exp, true, highestDamage, pty, wedding_EXP, Class_Bonus_EXP, Equipment_Bonus_EXP, Premium_Bonus_EXP);
             // attacker.increaseEquipExp(exp);

@@ -2499,7 +2499,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     }
 
     public void addFame(int famechange) {
-        this.fame += famechange;
+        this.fame = addToShort(this.fame, famechange);
         /*
          * if (this.fame >= 50) { finishAchievement(7); }
          */
@@ -3517,12 +3517,12 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         //  getClient().StartWindow();
         if (GameConstants.isKOC(job)) {
             if (level <= 70) {
-                remainingAp += 6;
+                remainingAp = addToShort(remainingAp, 6);
             } else {
-                remainingAp += 5;
+                remainingAp = addToShort(remainingAp, 5);
             }
         } else {
-            remainingAp += 5;
+            remainingAp = addToShort(remainingAp, 5);
         }
         int maxhp = stats.getMaxHp();
         int maxmp = stats.getMaxMp();
@@ -3596,7 +3596,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         }
         maxmp += stats.getTotalInt() / 10;
         exp -= GameConstants.getExpNeededForLevel(level);
-        level += 1;
+        level = addToShort(level, 1);
         int level = getLevel();
 
         // 成就系統
@@ -4855,7 +4855,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
             if (mulung_energy + 100 > 10000) {
                 mulung_energy = 10000;
             } else {
-                mulung_energy += 100;
+                mulung_energy = addToShort(mulung_energy, 100);
             }
         } else {
             mulung_energy = 0;
@@ -5250,12 +5250,22 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     }
 
     public void addCP(int ammount) {
-        totalCP += ammount;
-        availableCP += ammount;
+        totalCP = addToShort(totalCP, ammount);
+        availableCP = addToShort(availableCP, ammount);
     }
 
     public void useCP(int ammount) {
-        availableCP -= ammount;
+        availableCP = addToShort(availableCP, -(long) ammount);
+    }
+
+    static short addToShort(short value, long delta) {
+        if (delta > Short.MAX_VALUE - (long) value) {
+            return Short.MAX_VALUE;
+        }
+        if (delta < Short.MIN_VALUE - (long) value) {
+            return Short.MIN_VALUE;
+        }
+        return (short) (value + delta);
     }
 
     public int getAvailableCP() {

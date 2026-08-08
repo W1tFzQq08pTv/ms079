@@ -238,10 +238,7 @@ public class InventoryHandler {
             return;
         }
         final byte action = (byte) (slea.readByte() + 1);
-        short quest = slea.readShort();
-        if (quest < 0) { //questid 50000 and above, WILL cast to negative, this was tested.
-            quest += 65536; //probably not the best fix, but whatever
-        }
+        final int quest = slea.readShort() & 0xFFFF;
         if (chr == null) {
             return;
         }
@@ -1373,7 +1370,7 @@ public class InventoryHandler {
                             break;
                         }
                         case 0x2000: // hp
-                            short maxhp = playerst.getMaxHp();
+                            int maxhp = playerst.getMaxHp();
 
                             if (job == 0) { // Beginner
                                 maxhp += Randomizer.rand(8, 12);
@@ -1416,14 +1413,14 @@ public class InventoryHandler {
                             } else { // GameMaster
                                 maxhp += Randomizer.rand(50, 100);
                             }
-                            maxhp = (short) Math.min(30000, Math.abs(maxhp));
+                            final short updatedMaxHp = (short) Math.min(30000, maxhp);
                             c.getPlayer().setHpApUsed((short) (c.getPlayer().getHpApUsed() + 1));
-                            playerst.setMaxHp(maxhp);
-                            statupdate.add(new Pair<MapleStat, Integer>(MapleStat.MAXHP, (int) maxhp));
+                            playerst.setMaxHp(updatedMaxHp);
+                            statupdate.add(new Pair<MapleStat, Integer>(MapleStat.MAXHP, (int) updatedMaxHp));
                             break;
 
                         case 0x8000: // mp
-                            short maxmp = playerst.getMaxMp();
+                            int maxmp = playerst.getMaxMp();
 
                             if (job == 0) { // Beginner
                                 maxmp += Randomizer.rand(6, 8);
@@ -1452,10 +1449,10 @@ public class InventoryHandler {
                             } else { // GameMaster
                                 maxmp += Randomizer.rand(50, 100);
                             }
-                            maxmp = (short) Math.min(30000, Math.abs(maxmp));
+                            final short updatedMaxMp = (short) Math.min(30000, maxmp);
                             c.getPlayer().setHpApUsed((short) (c.getPlayer().getHpApUsed() + 1));
-                            playerst.setMaxMp(maxmp);
-                            statupdate.add(new Pair<MapleStat, Integer>(MapleStat.MAXMP, (int) maxmp));
+                            playerst.setMaxMp(updatedMaxMp);
+                            statupdate.add(new Pair<MapleStat, Integer>(MapleStat.MAXMP, (int) updatedMaxMp));
                             break;
                     }
                     switch (apfrom) { // AP from
