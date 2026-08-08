@@ -19,7 +19,7 @@
 
         <mysql-connector-java.version>8.0.25</mysql-connector-java.version>
         <helper.version>2021.1.3</helper.version>
-        <jsoup.version>1.13.1</jsoup.version>
+        <jsoup.version>1.23.1</jsoup.version>
         <ebean.version>12.11.3</ebean.version>
         <guice.version>5.0.1</guice.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
