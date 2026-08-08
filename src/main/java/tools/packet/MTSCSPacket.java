@@ -51,7 +51,7 @@ public class MTSCSPacket {
     };
     private static final byte[] CASH_SHOP_CATALOG_METADATA = HexTool.getByteArrayFromHexString(
             "00 00 00 63 00 74 00 6F 00 72 00 32 00 44 00 00 00 00 00 8D 00 11 00 D4 00 0E 06 98 E9 86 07 38 C2 BD 07 00 00 65 00 6C 00 00 00 04 00 03 00 D7 01 0C 06 0E 00 00 00 35 00 31 00 31 00 30 00 30 00 30 00 31 00 00 00 00 00 00 00 04 00 07 00 D3 01 0A 06 10 00 00 00 65 00 62 00 75 00 72 00 73 00 74 00 65 00 72 00 00 00 00 00 82 00 0B 00 2F 00 0A 06 B8 05 49 07 88 D6 B3 07");
-    private static final int MAX_MAPLE_PACKET_LENGTH = 0xFFFF;
+    static final int MAX_MAPLE_PACKET_PAYLOAD_LENGTH = Short.MAX_VALUE - 4;
 
     public static MaplePacket warpCS(MapleClient c) {
         final MaplePacketLittleEndianWriter mplew = new MaplePacketLittleEndianWriter();
@@ -156,7 +156,7 @@ public class MTSCSPacket {
         // Legacy captured catalog removed; Git retains the original packet for reference.
         Collection<CashModInfo> modifications = CashItemFactory.getInstance().getAllModInfo();
         addCashShopCatalog(mplew, modifications, CashItemFactory.getInstance().getBestItems(),
-                MAX_MAPLE_PACKET_LENGTH);
+                MAX_MAPLE_PACKET_PAYLOAD_LENGTH);
 
         /*
          * mplew.write(HexTool.getByteArrayFromHexString("49 00 00 00 57 A5 9B

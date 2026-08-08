@@ -15,6 +15,8 @@ import static org.junit.Assert.assertTrue;
 
 public class MTSCSPacketTest {
 
+    private static final int MAPLE_PACKET_HEADER_LENGTH = 4;
+
     @Test
     public void cashShopCatalogTailMatchesV079Layout() {
         int[] bestItems = {50400041, 50400016, 50400135, 50400061, 20800204};
@@ -65,6 +67,12 @@ public class MTSCSPacketTest {
         assertEquals(10, readShowUpModification(buffer));
         assertEquals(20, readShowUpModification(buffer));
         assertEquals(30, readShowUpModification(buffer));
+    }
+
+    @Test
+    public void cashShopPayloadLeavesRoomForEncryptedPacketHeader() {
+        assertEquals(Short.MAX_VALUE,
+                MTSCSPacket.MAX_MAPLE_PACKET_PAYLOAD_LENGTH + MAPLE_PACKET_HEADER_LENGTH);
     }
 
     private static CashModInfo showUpModification(int serial) {
