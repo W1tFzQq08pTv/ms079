@@ -116,11 +116,14 @@ public class SummonHandler {
     }
 
     public static final void DamageSummon(final SeekableLittleEndianAccessor slea, final MapleCharacter chr) {
-      
+        if (chr == null || slea.available() < 13) {
+            return;
+        }
+
         int skillid = slea.readInt();
-         int unkByte = slea.readByte();
-         int damage = slea.readInt();
-         int monsterIdFrom = slea.readInt();
+        int unkByte = slea.readByte();
+        int damage = slea.readInt();
+        int monsterIdFrom = slea.readInt();
         //       slea.readByte(); // stance
 
 
