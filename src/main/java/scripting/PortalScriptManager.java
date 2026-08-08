@@ -56,7 +56,7 @@ public class PortalScriptManager {
             return scripts.get(scriptName);
         }
 
-        final File scriptFile = new File("脚本/传送点/" + scriptName + ".js");
+        final File scriptFile = new File("scripts/portals/" + scriptName + ".js");
         if (!scriptFile.exists()) {
             //scripts.put(scriptName, null);
             return null;
@@ -99,13 +99,13 @@ public class PortalScriptManager {
                 }
             } catch (Exception e) {
                 //LOGGER.error("执行地图脚本过程中发生错误.请检查Portal为:( " + portal.getScriptName() + ".js)的文件." + e);
-                FileoutputUtil.log("log\\Script_Except.log", "执行地图脚本过程中发生错误.请检查Portal为:( " + portal.getScriptName() + ".js)的文件.\r\n错误信息:" + e);
+                FileoutputUtil.log("logs/scripts/portal-exceptions.log", "执行地图脚本过程中发生错误.请检查Portal为:( " + portal.getScriptName() + ".js)的文件.\r\n错误信息:" + e);
             }
         } else {
             if (c.getPlayer().isAdmin()) {
                 c.getPlayer().dropMessage(5, "未找到Portal为:(" + portal.getScriptName() + ".js)的文件 在地图 " + c.getPlayer().getMapId() + " - " + c.getPlayer().getMap().getMapName());
             }
-            FileoutputUtil.log("log\\Script_Except.log", "执行地图脚本过程中发生错误.未找到Portal为:(" + portal.getScriptName() + ".js)的文件 在地图 " + c.getPlayer().getMapId() + " - " + c.getPlayer().getMap().getMapName());
+            FileoutputUtil.log("logs/scripts/portal-exceptions.log", "执行地图脚本过程中发生错误.未找到Portal为:(" + portal.getScriptName() + ".js)的文件 在地图 " + c.getPlayer().getMapId() + " - " + c.getPlayer().getMap().getMapName());
         }
     }
 

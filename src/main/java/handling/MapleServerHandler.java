@@ -57,7 +57,7 @@ public class MapleServerHandler extends IoHandlerAdapter implements MapleServerH
     //Screw locking. Doesn't matter.
 //    private static final ReentrantReadWriteLock IPLoggingLock = new ReentrantReadWriteLock();
     private static final String nl = System.lineSeparator();
-    private static final File loggedIPs = new File("日志/logs/LogIPs.txt");
+    private static final File loggedIPs = new File("logs/network/logged-ips.txt");
     private static final HashMap<String, FileWriter> logIPMap = new HashMap<>();
     //Note to Zero: Use an enumset. Don't iterate through an array.
     private static final EnumSet<RecvPacketOpcode> blocked = EnumSet.noneOf(RecvPacketOpcode.class);
@@ -389,9 +389,9 @@ public class MapleServerHandler extends IoHandlerAdapter implements MapleServerH
                     }
                     if (c.getPlayer() != null && c.isMonitored()) {
                         if (!blocked.contains(recv)) {
-                            FileoutputUtil.log("日志/logs/Monitored/" + c.getPlayer().getName() + ".txt", recv + " (" + Integer.toHexString(header_num) + ") Handled: \r\n" + slea + "\r\n");
+                            FileoutputUtil.log("logs/network/monitored/" + c.getPlayer().getName() + ".txt", recv + " (" + Integer.toHexString(header_num) + ") Handled: \r\n" + slea + "\r\n");
 
-//                            FileWriter fw = new FileWriter(new File("日志/logs/MonitorLogs/" + c.getPlayer().getName() + "_log.txt"), true);
+//                            FileWriter fw = new FileWriter(new File("logs/network/monitor/" + c.getPlayer().getName() + "_log.txt"), true);
 //                            fw.write(String.valueOf(recv) + " (" + Integer.toHexString(header_num) + ") Handled: \r\n" + slea.toString() + "\r\n");
 //                            fw.flush();
 //                            fw.close();

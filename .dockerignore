@@ -6,11 +6,8 @@ target
 out
 build
 logs
-日志
-日志*
-log*Script_Except.log
 wz
-脚本
+scripts
 db
 docker/mysql/data
 docker/mysql/backups

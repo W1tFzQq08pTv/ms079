@@ -159,7 +159,7 @@ public class CheatTracker {
                 String note = "时间：" + FileoutputUtil.CurrentReadable_Time() + " "
                         + "|| 玩家名字：" + chr.getName() + ""
                         + "|| 玩家地图：" + chr.getMapId() + "\r\n";
-                FileoutputUtil.packetLog("日志\\log\\吸怪检测\\" + chr.getName() + ".log", note);
+                FileoutputUtil.packetLog("logs/anticheat/mob-vacuum/" + chr.getName() + ".log", note);
             }
             /*
              * } else if ( dis > 1500 ) { monsterMoveCount++; if
@@ -287,7 +287,7 @@ public class CheatTracker {
                 //怪物碰撞过快 回避率过高 快速攻击 快速攻击2 怪物移动 伤害相同
                 String outputFileName = "断线";
                 World.Broadcast.broadcastGMMessage(MaplePacketCreator.serverNotice(6, "[GM信息] " + chrhardref.getName() + " 自动断线 类别: " + offense.toString() + " 原因: " + (param == null ? "" : (" - " + param))).getBytes());
-                FileoutputUtil.logToFile_chr(chrhardref, "日志/logs/Hack/" + outputFileName + ".txt", "\r\n " + FileoutputUtil.NowTime() + " 类别" + offense.toString() + " 原因 " + (param == null ? "" : (" - " + param)));
+                FileoutputUtil.logToFile_chr(chrhardref, "logs/anticheat/disconnections/" + outputFileName + ".txt", "\r\n " + FileoutputUtil.NowTime() + " 类别" + offense.toString() + " 原因 " + (param == null ? "" : (" - " + param)));
                 chrhardref.getClient().getSession().close();
                 //chrhardref.getClient().getSession().close();
             } else if (type == 3) {
@@ -335,7 +335,7 @@ public class CheatTracker {
                      * FileoutputUtil.CurrentReadable_Time() + " " + "|| 玩家名字："
                      * + chrhardref.getName() + "" + "|| 玩家地图：" +
                      * chrhardref.getMapId() + "" + "|| 外挂类型：" + offense.name()
-                     * + "\r\n"; FileoutputUtil.packetLog("日志\\log\\外挂检测\\" +
+                     * + "\r\n"; FileoutputUtil.packetLog("logs/anticheat/detections/" +
                      * chrhardref.getName() + ".log", note);
                      */ //                    AutobanManager.getInstance().autoban(chrhardref.getClient(), StringUtil.makeEnumHumanReadable(offense.name()));
                     gm_message = 50;

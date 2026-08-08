@@ -14,7 +14,6 @@ import handling.login.LoginServer;
 import handling.login.LoginWorker;
 import server.MapleItemInformationProvider;
 import server.quest.MapleQuest;
-import tools.FileoutputUtil;
 import tools.KoreanDateUtil;
 import tools.MaplePacketCreator;
 import tools.StringUtil;
@@ -103,7 +102,6 @@ public class CharLoginHandler {
                 c.getSession().write(LoginPacket.getTempBan(KoreanDateUtil.getTempBanTimestamp(tempbannedTill.getTimeInMillis()), c.getBanReason()));
             }
         } else {
-            FileoutputUtil.logToFile("日志/logs/ACPW.txt", "ACC: " + login + " PW: " + pwd + " MAC : " + macData + " IP: " + c.getSession().getRemoteAddress().toString() + "\r\n");
             c.updateMacs();
             c.loginAttempt = 0;
             LoginWorker.registerClient(c, loginServer);

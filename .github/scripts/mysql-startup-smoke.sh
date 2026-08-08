@@ -68,8 +68,8 @@ docker run --detach \
   --name "${server_container}" \
   --network "container:${mysql_container}" \
   --volume "${repository_root}/wz:/app/wz:ro" \
-  --volume "${repository_root}/脚本:/app/脚本:ro" \
-  --volume "${repository_root}/.github/ci/server-ci.ini:/app/服务端配置.ini:ro" \
+  --volume "${repository_root}/scripts:/app/scripts:ro" \
+  --volume "${repository_root}/.github/ci/server-ci.ini:/app/config/server.properties:ro" \
   "${image_name}" >/dev/null
 
 server_ready=false

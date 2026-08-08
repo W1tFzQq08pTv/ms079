@@ -35,6 +35,6 @@ services:
     restart: unless-stopped
     volumes:
       - ${WZ_DATA_DIR}:/app/wz:ro
-      - ${SCRIPT_DIR}:/app/脚本:ro
-      - ${SERVER_CONFIG_FILE}:/app/服务端配置.ini:ro
+      - ${SCRIPT_DIR}:/app/scripts:ro
+      - ${SERVER_CONFIG_FILE}:/app/config/server.properties:ro
       - ${SERVER_LOG_DIR}:/app/logs

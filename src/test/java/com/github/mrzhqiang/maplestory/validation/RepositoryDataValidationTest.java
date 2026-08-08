@@ -45,7 +45,7 @@ public class RepositoryDataValidationTest {
         assertTrue("JavaScript engine does not support compilation", engine instanceof Compilable);
 
         Compilable compilable = (Compilable) engine;
-        List<Path> scripts = repositoryFiles(Paths.get("脚本"), ".js");
+        List<Path> scripts = repositoryFiles(Paths.get("scripts"), ".js");
         assertFalse("No game scripts were found", scripts.isEmpty());
 
         List<String> failures = new ArrayList<>();
@@ -93,8 +93,8 @@ public class RepositoryDataValidationTest {
 
     @Test
     public void validatesServerConfiguration() throws Exception {
-        Path config = Paths.get("服务端配置.ini");
-        assertTrue("服务端配置.ini is missing", Files.isRegularFile(config));
+        Path config = Paths.get("config", "server.properties");
+        assertTrue("config/server.properties is missing", Files.isRegularFile(config));
 
         Properties properties = new Properties();
         try (BufferedReader reader = Files.newBufferedReader(config, StandardCharsets.UTF_8)) {

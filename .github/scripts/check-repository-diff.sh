@@ -13,7 +13,7 @@ git diff --check "${base_sha}...${head_sha}"
 failures=()
 while IFS= read -r -d '' path; do
   case "${path}" in
-    target/*|out/*|build/*|logs/*|日志/*|*.log|*.orig|*.zip|*.tar.gz)
+    target/*|out/*|build/*|logs/*|*.log|*.orig|*.zip|*.tar.gz)
       failures+=("Forbidden generated or archive file: ${path}")
       ;;
   esac

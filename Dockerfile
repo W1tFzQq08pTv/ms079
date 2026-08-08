@@ -20,9 +20,11 @@ WORKDIR /app
 ENV LANG=C.UTF-8 \
     TZ=Asia/Shanghai
 
+RUN mkdir -p /app/config
+
 COPY --from=build /build/target/classes ./classes
 COPY --from=build /build/target/dependency ./lib
 
-VOLUME ["/app/wz", "/app/脚本", "/app/logs"]
+VOLUME ["/app/wz", "/app/scripts", "/app/logs"]
 
-ENTRYPOINT ["java", "-server", "-Dfile.encoding=UTF-8", "-Dwzpath=wz", "-cp", "classes:lib/*", "com.github.mrzhqiang.maplestory.MapleStoryApplication"]
+ENTRYPOINT ["java", "-server", "-Dfile.encoding=UTF-8", "-Dwz.path=wz", "-cp", "classes:lib/*", "com.github.mrzhqiang.maplestory.MapleStoryApplication"]

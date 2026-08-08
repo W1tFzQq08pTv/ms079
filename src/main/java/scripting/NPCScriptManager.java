@@ -165,7 +165,7 @@ public class NPCScriptManager extends AbstractScriptManager {
         lock.lock();
         try {
             if (!cms.containsKey(c)) {
-                final Invocable iv = getInvocable("任务/" + quest + ".js", c, true);
+                final Invocable iv = getInvocable("quests/" + quest + ".js", c, true);
                 if (iv == null) {
                     dispose(c);
                     return;
@@ -228,7 +228,7 @@ public class NPCScriptManager extends AbstractScriptManager {
         lock.lock();
         try {
             if (!cms.containsKey(c)) {
-                final Invocable iv = getInvocable("任务/" + quest + ".js", c, true);
+                final Invocable iv = getInvocable("quests/" + quest + ".js", c, true);
                 if (iv == null) {
                     dispose(c);
                     return;
@@ -287,14 +287,14 @@ public class NPCScriptManager extends AbstractScriptManager {
             cms.remove(c);
             if (npccm.getType() == -1) {
                 if (npccm.getwh() == 0) {
-                    c.removeScriptEngine("脚本/npc/" + npccm.getNpc() + ".js");
+                    c.removeScriptEngine("scripts/npc/" + npccm.getNpc() + ".js");
                 } else {
-                    c.removeScriptEngine("脚本/npc/" + npccm.getNpc() + "_" + npccm.getwh() + ".js");
+                    c.removeScriptEngine("scripts/npc/" + npccm.getNpc() + "_" + npccm.getwh() + ".js");
                 }
-                //  c.removeScriptEngine("脚本/npc/" + npccm.getNpc() + ".js");
-                c.removeScriptEngine("脚本/npc/notcoded.js");
+                //  c.removeScriptEngine("scripts/npc/" + npccm.getNpc() + ".js");
+                c.removeScriptEngine("scripts/npc/notcoded.js");
             } else {
-                c.removeScriptEngine("脚本/任务/" + npccm.getQuest() + ".js");
+                c.removeScriptEngine("scripts/quests/" + npccm.getQuest() + ".js");
             }
         }
         if (c.getPlayer() != null && c.getPlayer().getConversation() == 1) {

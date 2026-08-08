@@ -254,7 +254,7 @@ public class CashShopOperation {
                      * 购买物品数量：" + itemz.getQuantity() + "!=" + item.getCount() + "||
                      * 购买物品SN：" + item.getSN() + " " + "|| 购买物品是否判定出售：" +
                      * item.onSale() + "\r\n";
-                     * FileoutputUtil.packetLog("日志\\log\\购买商城物品信息错误\\" + chr.getName()
+                     * FileoutputUtil.packetLog("logs/cashshop/purchase-errors/" + chr.getName()
                      * + ".log", note1); }
                      */
                     if (itemz != null && itemz.getUniqueId() > 0 && itemz.getItemId() == item.getId() && itemz.getQuantity() == item.getCount()) {
@@ -266,7 +266,7 @@ public class CashShopOperation {
                          * item.getPrice() + " " + "|| 购买物品数量：" + item.getCount() +
                          * " " + "|| 购买物品SN：" + item.getSN() + " " + "||
                          * 购买物品是否判定出售：" + item.onSale() + "\r\n";
-                         * FileoutputUtil.packetLog("日志\\log\\购买商城物品信息正常\\" +
+                         * FileoutputUtil.packetLog("logs/cashshop/purchases/" +
                          * chr.getName() + ".log", note);
                          */
                         if (useNX == 1) {

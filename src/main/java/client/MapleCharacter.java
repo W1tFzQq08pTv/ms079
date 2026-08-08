@@ -828,7 +828,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         } catch (SQLException ess) {
             ess.printStackTrace();
             LOGGER.debug("加载角色数据信息出错...");
-            FileoutputUtil.outputFileError("日志\\log\\Packet_Except.log", ess);
+            FileoutputUtil.outputFileError("logs/packets/packet-exceptions.log", ess);
         } finally {
             try {
                 if (ps != null) {
@@ -986,13 +986,13 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
             con.commit();
         } catch (Exception e) {
             e.printStackTrace();
-            FileoutputUtil.outputFileError("日志\\log\\Packet_Except.log", e);
+            FileoutputUtil.outputFileError("logs/packets/packet-exceptions.log", e);
             LOGGER.error("[charsave] Error saving character data");
             try {
                 con.rollback();
             } catch (SQLException ex) {
                 e.printStackTrace();
-                FileoutputUtil.outputFileError("日志\\log\\Packet_Except.log", ex);
+                FileoutputUtil.outputFileError("logs/packets/packet-exceptions.log", ex);
                 LOGGER.error("[charsave] Error Rolling Back");
             }
         } finally {
@@ -1010,7 +1010,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
                 con.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
             } catch (SQLException e) {
                 e.printStackTrace();
-                FileoutputUtil.outputFileError("日志\\log\\Packet_Except.log", e);
+                FileoutputUtil.outputFileError("logs/packets/packet-exceptions.log", e);
                 LOGGER.error("[charsave] Error going back to autocommit mode");
             }
             try {

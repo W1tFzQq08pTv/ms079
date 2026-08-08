@@ -1203,7 +1203,7 @@ public class DamageParse {
                                 + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                                 + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                                 + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                        FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                        FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                     } else if (c.getPosition().y - monster.getPosition().y <= -800) {
                         //    c.dropMessage(1, "[技能范围检测-A]\r\n非法使用外挂或者修改WZ\r\n导致:技能范围扩大.\r\n攻击力无效！\r\n请勿再次使用后果自负！");
@@ -1215,7 +1215,7 @@ public class DamageParse {
                                 + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                                 + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                                 + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                        FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                        FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                     } else if (c.getPosition().x - monster.getPosition().x >= 800) {
                         //    c.dropMessage(1, "[技能范围检测-A]\r\n非法使用外挂或者修改WZ\r\n导致:技能范围扩大.\r\n攻击力无效！\r\n请勿再次使用后果自负！");
@@ -1227,7 +1227,7 @@ public class DamageParse {
                                 + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                                 + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                                 + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                        FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                        FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                     } else if (c.getPosition().x - monster.getPosition().x <= -900) {
                         //    c.dropMessage(1, "[技能范围检测-A]\r\n非法使用外挂或者修改WZ\r\n导致:技能范围扩大.\r\n攻击力无效！\r\n请勿再次使用后果自负！");
@@ -1239,7 +1239,7 @@ public class DamageParse {
                                 + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                                 + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                                 + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                        FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                        FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                     }
                 } else if (c.getJob() >= 200 && c.getJob() < 300) {
@@ -1253,7 +1253,7 @@ public class DamageParse {
                                 + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                                 + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                                 + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                        FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                        FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                     } else if (c.getPosition().y - monster.getPosition().y <= -800) {
                         // c.dropMessage(1, "[技能范围检测-B]\r\n非法使用外挂或者修改WZ\r\n导致:技能范围扩大.\r\n攻击力无效！\r\n请勿再次使用后果自负！");
@@ -1265,7 +1265,7 @@ public class DamageParse {
                                 + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                                 + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                                 + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                        FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                        FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                     } else if (c.getPosition().x - monster.getPosition().x >= 550) {
                         // c.dropMessage(1, "[技能范围检测-B]\r\n非法使用外挂或者修改WZ\r\n导致:技能范围扩大.\r\n攻击力无效！\r\n请勿再次使用后果自负！");
@@ -1277,7 +1277,7 @@ public class DamageParse {
                                 + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                                 + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                                 + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                        FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                        FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                     } else if (c.getPosition().x - monster.getPosition().x <= -550) {
                         // c.dropMessage(1, "[技能范围检测-B]\r\n非法使用外挂或者修改WZ\r\n导致:技能范围扩大.\r\n攻击力无效！\r\n请勿再次使用后果自负！");
@@ -1289,7 +1289,7 @@ public class DamageParse {
                                 + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                                 + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                                 + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                        FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                        FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                     }
                 } else if (c.getPosition().y - monster.getPosition().y >= 350) {
@@ -1302,7 +1302,7 @@ public class DamageParse {
                             + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                             + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                             + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                    FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                    FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                 } else if (c.getPosition().y - monster.getPosition().y <= -350) {
                     // c.dropMessage(1, "[技能范围检测-B]\r\n非法使用外挂或者修改WZ\r\n导致:技能范围扩大.\r\n攻击力无效！\r\n请勿再次使用后果自负！");
@@ -1314,7 +1314,7 @@ public class DamageParse {
                             + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                             + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                             + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                    FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                    FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                 } else if (c.getPosition().x - monster.getPosition().x >= 500) {
                     // c.dropMessage(1, "[技能范围检测-B]\r\n非法使用外挂或者修改WZ\r\n导致:技能范围扩大.\r\n攻击力无效！\r\n请勿再次使用后果自负！");
@@ -1326,7 +1326,7 @@ public class DamageParse {
                             + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                             + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                             + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                    FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                    FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                 } else if (c.getPosition().x - monster.getPosition().x <= -500) {
                     // c.dropMessage(1, "[技能范围检测-B]\r\n非法使用外挂或者修改WZ\r\n导致:技能范围扩大.\r\n攻击力无效！\r\n请勿再次使用后果自负！");
@@ -1338,7 +1338,7 @@ public class DamageParse {
                             + "\r\n" + "怪物坐标：" + monster.getPosition().x + " Y:" + monster.getPosition().y
                             + "\r\n" + "时间：" + FileoutputUtil.CurrentReadable_Time()
                             + "\r\n" + "IP：" + c.getClient().getSession().getRemoteAddress().toString().split(":")[0];
-                    FileoutputUtil.packetLog("日志\\log\\全屏检测\\" + c.getName() + ".log", 全屏);
+                    FileoutputUtil.packetLog("logs/anticheat/full-map-attacks/" + c.getName() + ".log", 全屏);
 
                 }
             }
