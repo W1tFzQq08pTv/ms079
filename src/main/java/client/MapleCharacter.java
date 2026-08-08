@@ -831,11 +831,26 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
             FileoutputUtil.outputFileError("logs/packets/packet-exceptions.log", ess);
         } finally {
             try {
+                if (rs != null) {
+                    rs.close();
+                }
+            } catch (SQLException ignore) {
+            }
+            try {
+                if (pse != null) {
+                    pse.close();
+                }
+            } catch (SQLException ignore) {
+            }
+            try {
                 if (ps != null) {
                     ps.close();
                 }
-                if (rs != null) {
-                    rs.close();
+            } catch (SQLException ignore) {
+            }
+            try {
+                if (con != null) {
+                    con.close();
                 }
             } catch (SQLException ignore) {
             }
