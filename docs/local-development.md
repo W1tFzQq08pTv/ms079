@@ -8,8 +8,8 @@
 
 - 已安装并选中 JDK 8；
 - 已导入 `db/ms079.sql`；
-- 已配置根目录的 `服务端配置.ini`；
-- 根目录存在完整的 `wz/` 和 `脚本/`；
+- 已配置仓库内的 `config/server.properties`；
+- 根目录存在完整的 `wz/` 和 `scripts/`；
 - MySQL 5.7 可以从本机访问。
 
 ## 导入项目
@@ -52,16 +52,16 @@ gui.GUIApplication
 
 它是实际的 Swing 服务端控制台，提供启动、定时关闭、保存、重载、公告、账号解卡、修改密码和发放物品等管理操作。点击其中的“启动服务端”后，也会创建同样的 Guice 配置并调用 `ApplicationStarter`。
 
-该 GUI 属于遗留管理入口，当前 CI、Dockerfile 和根目录的 `启动服务端-GUI.bat` 都不会启动它。GUI 中包含高权限数据库和玩家操作，部分反馈还会在界面中显示敏感值；只能在隔离开发环境中评估，不应把它当作已经完成权限隔离和生产验证的管理后台。常规开发和自动化仍以 `MapleStoryApplication` 为主入口。
+该 GUI 属于遗留管理入口，当前 CI、Dockerfile 和根目录的 `start-server.bat` 都不会启动它。GUI 中包含高权限数据库和玩家操作，部分反馈还会在界面中显示敏感值；只能在隔离开发环境中评估，不应把它当作已经完成权限隔离和生产验证的管理后台。常规开发和自动化仍以 `MapleStoryApplication` 为主入口。
 
 ## 工作目录
 
 工作目录必须是仓库根目录，因为运行时使用相对路径读取：
 
 ```text
-服务端配置.ini
+config/server.properties
 wz/
-脚本/
+scripts/
 logs/ 或其他运行日志目录
 ```
 
@@ -95,10 +95,10 @@ logs/ 或其他运行日志目录
 
 ```text
 logs/application.log
-日志/logs/...
+logs/...
 ```
 
-前者来自 Logback，后者来自遗留 `FileoutputUtil`。当前登录处理器会把成功登录时的账号、明文密码、MAC 和地址写入 `日志/logs/ACPW.txt`。在代码修复前，只能使用隔离测试凭据；不要使用任何与真实服务、邮箱或其他系统复用的密码，也不要分享或提交整个日志目录。
+前者来自 Logback，后者来自 `FileoutputUtil`。两者均写入 `logs/`；登录处理器已经移除明文密码日志。迁移前生成的历史日志或备份仍可能含有旧凭据，不要分享或提交整个日志目录。
 
 ## 端口检查
 
@@ -161,13 +161,13 @@ java -jar target/ms079.jar
 当前根目录的：
 
 ```text
-启动服务端-命令行.bat
-启动服务端-GUI.bat
+start-server-console.bat
+start-server.bat
 ```
 
 都调用 Docker Compose，并不是本地 JDK 启动脚本；所谓 GUI 脚本只是在启动后展示 Compose 状态，也不会启动 `gui.GUIApplication`。不要用它们判断 IDE、Swing GUI 或本地 Java 配置是否正确。
 
-`启动服务端-命令行.sh` 面向分发目录的 Java classpath 结构，要求根目录和 `lib/` 已经包含相应 JAR。它不等同于在源码仓库中直接运行 Maven 项目。
+`start-server.sh` 面向分发目录的 Java classpath 结构，要求根目录和 `lib/` 已经包含相应 JAR。它不等同于在源码仓库中直接运行 Maven 项目。
 
 ## 推荐开发循环
 

@@ -54,7 +54,7 @@ target/ms079-1.0-SNAPSHOT-dist.tar.gz
 - `target` 中的 JAR；
 - `lib/` 下的运行依赖；
 - `wz/`；
-- `脚本/`；
+- `scripts/`；
 - `db/*.sql`。
 
 当前仓库没有顶层 `LICENSE` 文件，所以 assembly 中的 `LICENSE*` 模式不会凭空生成许可证。不要把原 README 的用途声明当成正式许可证。
@@ -62,17 +62,17 @@ target/ms079-1.0-SNAPSHOT-dist.tar.gz
 当前 descriptor **不包含**：
 
 - `Dockerfile`；
-- `compose.yaml`；
+- `docker-compose.yml`；
 - `docs/`；
 - `*.ps1`，包括客户端守护和紧急停止使用的 PowerShell 实现；
 - `.github/` 下的 CI 启动脚本；
 - `SECURITY.md`，因为它不匹配 `README*`、`LICENSE*` 或 `NOTICE*`。
 
-这还会产生一个实际限制：归档虽然包含 `启动服务端-命令行.bat` 和 `启动服务端-GUI.bat`，但这两个 BAT 当前都调用 Docker Compose，而归档没有包含 `compose.yaml` 和 `Dockerfile`，所以它们不能在一个独立解压目录中直接工作。`启动服务端-命令行.sh` 使用 `ms079.jar` 与 `lib/` classpath，更接近该 assembly 的目录结构，但它也没有被 CI 在解压后的归档中验证。
+这还会产生一个实际限制：归档虽然包含 `start-server-console.bat` 和 `start-server.bat`，但这两个 BAT 当前都调用 Docker Compose，而归档没有包含 `docker-compose.yml` 和 `Dockerfile`，所以它们不能在一个独立解压目录中直接工作。`start-server.sh` 使用 `ms079.jar` 与 `lib/` classpath，更接近该 assembly 的目录结构，但它也没有被 CI 在解压后的归档中验证。
 
 由于 `docs/` 也不在 descriptor 的 include 列表中，Maven assembly 当前只带根 README，不会附带本目录的新开发文档。标签源码包则会包含提交中正常跟踪的 `docs/`。如果未来希望运行分发包自带新文档，需要单独调整 assembly 并验证归档内容。
 
-另外，assembly 会原样打入根目录的 `服务端配置.ini` 和完整 `db/ms079.sql`。前者可能包含本地数据库凭据，后者包含示例账号、角色和大量历史业务数据。生成归档成功不代表这些内容适合公开发布。
+另外，assembly 会原样打入根目录的 `config/server.properties` 和完整 `db/ms079.sql`。前者可能包含本地数据库凭据，后者包含示例账号、角色和大量历史业务数据。生成归档成功不代表这些内容适合公开发布。
 
 ## 验证分发包
 
@@ -87,16 +87,16 @@ tar -tzf target/ms079-1.0-SNAPSHOT-dist.tar.gz
 
 - `ms079.jar` 存在；
 - `lib/` 中有运行依赖；
-- `wz/` 和 `脚本/` 不是空目录；
+- `wz/` 和 `scripts/` 不是空目录；
 - `db/ms079.sql` 存在；
-- `服务端配置.ini` 存在；
+- `config/server.properties` 存在；
 - Shell 和 BAT 启动脚本存在，并已确认其依赖文件是否被一同打包；
 - 没有打入 `.git`、IDE 配置、日志或本地秘密。
 
 真正发布前还应：
 
 1. 在全新目录解压；
-2. 审查或替换 `服务端配置.ini`；
+2. 审查或替换 `config/server.properties`；
 3. 审查 SQL 转储中的示例账号和数据；
 4. 根据目标启动方式补齐 Compose/Dockerfile 或使用并修正 Shell 启动路径；
 5. 使用隔离数据库做真实启动验证；
@@ -135,7 +135,7 @@ SHA256SUMS
 
 工作流会测试 TAR.GZ 和 ZIP 是否可读取，并为两个归档生成 SHA-256 清单。
 
-因为 `服务端配置.ini` 当前是 Git 跟踪文件，源码归档也会包含标签提交中的该文件；如果提交中存在真实凭据，它们会直接进入公开资产。标签发布前不能只检查未跟踪文件，还必须审查已提交配置及其历史。
+因为 `config/server.properties` 当前是 Git 跟踪文件，源码归档也会包含标签提交中的该文件；如果提交中存在真实凭据，它们会直接进入公开资产。标签发布前不能只检查未跟踪文件，还必须审查已提交配置及其历史。
 
 ## GitHub Release 行为
 
@@ -153,7 +153,7 @@ SHA256SUMS
 4. WZ、脚本和配置校验通过；
 5. Docker/MySQL 启动冒烟通过；
 6. assembly 分发包在干净目录中可以解压，并针对选定启动方式补齐依赖后完成启动；
-7. 已审查会被打包的 `服务端配置.ini` 和 `db/ms079.sql`；
+7. 已审查会被打包的 `config/server.properties` 和 `db/ms079.sql`；
 8. 没有数据库密码、令牌、日志或本地配置进入提交和归档；
 9. `SECURITY.md` 和外部资源说明仍然准确；
 10. 已确认仓库级许可证和第三方资源授权边界；
@@ -168,7 +168,7 @@ SHA256SUMS
 | 生成入口 | Maven `release` Profile | GitHub Actions 标签工作流 |
 | 主要用途 | 组合 JAR、依赖和运行数据；仍需补齐并验证启动方式 | 保存标签对应源码快照 |
 | 编译产物 | 包含 JAR 和 `lib/` | 不包含未跟踪构建产物 |
-| WZ/脚本/SQL | 包含 | 标签提交跟踪时包含 |
+| WZ、scripts、SQL | 包含 | 标签提交跟踪时包含 |
 | 校验 | 当前 CI 未做归档端到端启动验证 | 归档可读性和 `SHA256SUMS` |
 
 继续阅读：[构建与测试](build-and-testing.md)。

@@ -20,9 +20,9 @@
 | 文档 | 适用场景 |
 | --- | --- |
 | [环境准备](environment.md) | 安装或检查 JDK、MySQL、Docker、IDE 及 Maven Wrapper |
-| [数据库与服务端配置](database-and-configuration.md) | 初始化 `ms079` 数据库，理解 `服务端配置.ini` |
+| [数据库与服务端配置](database-and-configuration.md) | 初始化 `ms079` 数据库，理解 `config/server.properties` |
 | [本地 Java 开发](local-development.md) | 在 IDE 中导入、启动、调试和停止服务端 |
-| [Docker 运行](docker.md) | 使用当前 Dockerfile 和外部 MySQL 容器运行服务端 |
+| [Docker 运行](docker.md) | 使用 Docker Compose 编排 MySQL 5.7 与游戏服务端 |
 | [项目结构](project-structure.md) | 了解 Java 包、资源、测试和启动流程 |
 | [游戏数据与脚本](game-data-and-scripts.md) | 修改 WZ XML、NPC、事件、地图及其他脚本 |
 | [构建与测试](build-and-testing.md) | 执行 Maven、数据校验、Docker 校验和 CI 对齐检查 |
@@ -48,7 +48,7 @@
 
 ### Docker 和启动脚本
 
-阅读 [Docker 运行](docker.md)。当前 Compose 只管理游戏服务端，数据库容器是外部前置条件，不是同一个 Compose 项目中的服务。
+阅读 [Docker 运行](docker.md)。当前 Compose 同时管理 MySQL 5.7 和游戏服务端，并在数据库健康检查通过后启动服务端。
 
 ### 客户端联调
 
@@ -60,8 +60,8 @@
 - 当前数据库运行基线是 MySQL 5.7。
 - Java 应用入口是 `com.github.mrzhqiang.maplestory.MapleStoryApplication`。
 - 本地运行时的工作目录应为仓库根目录。
-- `wz/`、`脚本/` 和 `服务端配置.ini` 都是运行时输入，不只是发布附件。
+- `wz/`、`scripts/` 和 `config/server.properties` 都是运行时输入，不只是发布附件。
 - `db/ms079.sql` 是带示例账号、角色及大量游戏数据的历史数据转储，不是空 schema。
-- 当前遗留登录代码会把成功登录时的账号、明文密码、MAC 和地址写入 `日志/logs/ACPW.txt`；只能使用隔离测试凭据，不能直接承载真实账号。
+- 登录流程不再写入明文密码；历史日志或备份仍可能包含旧凭据，公开或共享前必须审查并脱敏。
 - 不要提交数据库密码、生产地址、日志、`target/` 或临时压缩包。
 - 安全问题不要先创建公开 Issue，请按 [`SECURITY.md`](../SECURITY.md) 私密报告。

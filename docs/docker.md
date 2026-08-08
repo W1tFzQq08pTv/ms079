@@ -2,7 +2,7 @@
 
 [返回文档目录](README.md)
 
-当前 Docker 方案将 Java 编译和运行环境固定在镜像内，但不会创建或初始化 MySQL。使用前必须理解外部数据库容器和共享网络命名空间的约束。
+当前 Docker Compose 同时编排 MySQL 5.7 和 Java 8 游戏服务端。MySQL 首次使用空数据目录时会导入仓库 SQL，服务端在数据库健康检查通过后启动。
 
 ## 当前容器结构
 
@@ -10,7 +10,7 @@
 宿主机
 ├── ms079-mysql       MySQL 5.7、数据库数据、宿主机端口发布
 └── ms079-server      Java 8 游戏服务端
-        └── network_mode: container:ms079-mysql
+        └── network_mode: service:ms079-mysql
 ```
 
 `ms079-server` 直接加入 `ms079-mysql` 的网络命名空间。两个容器共享 `127.0.0.1` 和监听端口，因此：
@@ -18,7 +18,7 @@
 - 服务端配置可使用 `127.0.0.1:3306` 访问 MySQL；
 - 登录、频道和商城端口需要在创建 `ms079-mysql` 时发布到宿主机；
 - 不能再给 `ms079-server` 单独配置端口映射；
-- 数据库容器名称必须与 `compose.yaml` 中的 `ms079-mysql` 一致。
+- 服务端通过 Compose 服务 `ms079-mysql` 共享数据库网络命名空间。
 
 ## 镜像内容
 
@@ -32,25 +32,23 @@ Dockerfile 使用两阶段构建：
 | 宿主机 | 容器内 | 权限 |
 | --- | --- | --- |
 | `./wz` | `/app/wz` | 只读 |
-| `./脚本` | `/app/脚本` | 只读 |
-| `./服务端配置.ini` | `/app/服务端配置.ini` | 只读 |
+| `./scripts` | `/app/scripts` | 只读 |
+| `./config/server.properties` | `/app/config/server.properties` | 只读 |
 | `./logs` | `/app/logs` | 可写 |
 
 因此修改 Java 代码后需要重新构建镜像；修改 WZ、脚本或配置后通常只需重启服务端容器，但涉及缓存、删除数据或结构变化时应完整重启并重新验证。
 
-`./logs` 只持久化 Logback 的 `application.log` 和滚动文件。遗留 `FileoutputUtil` 使用另一个目录 `/app/日志/logs/`，当前 Compose 没有为它配置卷；这些文件留在容器可写层，容器被移除时可能丢失。该遗留目录还会包含成功登录时记录的明文密码、MAC 和地址。修复代码前只能使用隔离测试凭据，不应通过新增持久卷把敏感日志长期保存下来。
+Logback 与 `FileoutputUtil` 均写入 `/app/logs`，由宿主机 `./logs` 统一持久化。登录流程已经移除明文密码日志；迁移前生成的历史日志或备份仍可能含有旧凭据，不能公开分享。
 
-## 准备 MySQL 容器
+## 准备 MySQL 配置
 
-当前 `compose.yaml` 不包含数据库服务。数据库容器必须提前满足：
+复制 `.env.example` 为 `.env`，至少设置非空的 `MYSQL_ROOT_PASSWORD`。Compose 使用 MySQL 5.7、健康检查和以下绑定目录：
 
-- 名称为 `ms079-mysql`；
-- 运行 MySQL 5.7；
-- 已创建 `ms079` schema；
-- 已导入 `db/ms079.sql`；
-- JDBC 凭据与 `服务端配置.ini` 一致；
-- 发布 MySQL 和游戏服务端所需端口；
-- 使用可持久化的数据卷。
+- `${MYSQL_DATA_DIR}`，默认 `./docker/mysql/data`，持久化现有数据库；
+- `${MYSQL_HEALTH_INIT_SQL}`，创建最小权限健康检查账号；
+- `${MYSQL_INIT_SQL}`，默认指向 `db/ms079.sql`，仅在数据目录首次初始化时导入。
+
+`config/server.properties` 中的 JDBC 凭据必须与数据库现有账号一致。修改 `.env` 不会自动改写已经初始化的数据目录或服务端配置。
 
 `db/ms079.sql` 包含示例账号、角色和大量历史业务数据，不是空 schema，而且会删除并重建同名表。即使只在容器中运行，也只能导入新建空数据库，并应在对外开放前审查和清理预置数据。不要把 CI 对临时数据库的重建方式套用到持久业务卷。
 
@@ -119,7 +117,7 @@ docker compose restart ms079-server
 docker compose down
 ```
 
-该命令不会移除外部的 `ms079-mysql` 容器，也不会删除它的数据卷。数据库容器的停止、删除或数据恢复属于独立操作，应先确认精确容器、卷和回退方案。
+该命令会停止并移除本 Compose 项目的服务端和 MySQL 容器，但不会删除 `${MYSQL_DATA_DIR}` 指向的宿主机数据库目录。不要手工删除该目录；重建或恢复数据库前应先备份并确认精确目标。
 
 重新构建 Java 镜像：
 
@@ -135,19 +133,19 @@ docker compose up -d ms079-server
 根目录提供：
 
 ```text
-启动服务端-命令行.bat
-启动服务端-GUI.bat
+start-server-console.bat
+start-server.bat
 ```
 
 两者都调用 Docker Compose：
 
 - 命令行版本启动后持续跟踪日志；
 - GUI 命名版本启动后显示 Compose 状态并等待用户关闭窗口；
-- 两者都要求 Docker Desktop 已启动，且外部数据库容器已准备完成。
+- 两者都要求 Docker Desktop 已启动，并从 `.env` 读取 Compose 配置。
 
 ## WZ 参数说明
 
-Dockerfile 当前传入历史参数 `-Dwzpath=wz`，而源码实际读取的是 `wz.path`。因为源码默认值本身就是 `wz`，当前容器挂载 `/app/wz` 后仍可正常工作。若以后需要把 WZ 移到其他容器路径，应先统一启动参数和源码属性名，不能只改挂载路径。
+Dockerfile 使用源码支持的 `-Dwz.path=wz`，对应容器中的 `/app/wz`。若以后移动 WZ，应同时修改启动参数和挂载路径。
 
 ## Apple Silicon 和 ARM64
 
@@ -161,12 +159,12 @@ Dockerfile 当前传入历史参数 `-Dwzpath=wz`，而源码实际读取的是 
 
 ## 当前设计限制
 
-- Compose 不是完整一键环境；
+- 首次初始化前必须在 `.env` 中设置数据库密码，并确认 `config/server.properties` 凭据一致；
 - 数据库容器名称和网络模式耦合较强；
 - 游戏端口由数据库容器发布，初次接触时不直观；
 - 根配置文件直接挂载，不具备独立 secret 管理；
 - WZ 和脚本属于大体积只读运行数据；
-- 只持久化 `logs/`，没有持久化遗留且含敏感信息的 `日志/`；
+- 所有应用日志统一持久化到宿主机 `logs/`；
 - 没有容器级服务端 healthcheck，需结合日志和端口判断就绪。
 
 这些是当前实现说明，不代表长期推荐架构。若要调整，应另行修改 Compose、配置加载和文档，并通过真实 MySQL 启动测试验证。

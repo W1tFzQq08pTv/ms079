@@ -10,7 +10,7 @@ ms079 同时支持本地 Java 开发和 Docker 运行。两种方式共享 MySQL
 | --- | --- | --- | --- |
 | JDK | Java 8 | 必需 | 宿主机不需要 |
 | Maven | Maven Wrapper | 使用仓库脚本 | 镜像构建时使用 |
-| MySQL | 5.7 | 必需 | 必须提前准备外部容器 |
+| MySQL | 5.7 | 必需 | 本地安装，或由 Docker Compose 编排 |
 | Git | 当前版本即可 | 推荐 | 推荐 |
 | Docker Engine / Desktop | 支持 Compose | 可选 | 必需 |
 | IDE | 支持 Maven 的 Java IDE | 推荐 | 可选 |
@@ -101,8 +101,8 @@ docker compose version
 - 从根目录的 `pom.xml` 导入 Maven 项目；
 - Project SDK 和 Maven Runner 均选择 JDK 8；
 - Java 源码、Maven 构建和仓库数据校验以 UTF-8 为基线；
-- `ServerConfiguration` 当前通过 `FileReader` 使用 JVM 默认字符集读取 `服务端配置.ini`，本地运行应显式使用 `-Dfile.encoding=UTF-8` 或确认系统默认字符集是 UTF-8；
-- 不要批量改变 `wz/`、`脚本/`、SQL 或 Java 文件的编码和换行符；
+- `ServerConfiguration` 当前通过 `FileReader` 使用 JVM 默认字符集读取 `config/server.properties`，本地运行应显式使用 `-Dfile.encoding=UTF-8` 或确认系统默认字符集是 UTF-8；
+- 不要批量改变 `wz/`、`scripts/`、SQL 或 Java 文件的编码和换行符；
 - Windows 上应保留仓库中的中文文件名和目录名。
 
 数据库初始化可以使用 MySQL CLI、MySQL Workbench、IDE 数据库工具或其他合法数据库客户端。工具只负责执行 SQL，不改变数据库版本和字符集要求。

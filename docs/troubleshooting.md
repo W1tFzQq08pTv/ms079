@@ -36,7 +36,7 @@ java -version
 - 不要删除或跳过 SHA-256 校验来绕过来源异常；
 - 企业网络可按 Maven Wrapper 官方方式配置受信任仓库镜像。
 
-## 找不到 `服务端配置.ini`
+## 找不到 `config/server.properties`
 
 ### 原因
 
@@ -46,7 +46,7 @@ java -version
 
 - IDE Working directory 设置为仓库根目录；
 - 分发包中从解压根目录启动；
-- Docker 确认挂载目标是 `/app/服务端配置.ini`；
+- Docker 确认挂载目标是 `/app/config/server.properties`；
 - 检查中文文件名是否被解压工具改名。
 
 ## 数据库连接失败
@@ -139,21 +139,21 @@ XML 可解析只证明格式基本有效。继续检查：
 
 如果 `server.channel.count` 大于 10，当前运行时仍只启动前 10 个频道；后续频道端口不监听并不是启动等待不足。配置校验允许更大的值，但与运行时上限不一致。
 
-## Docker 报找不到 `ms079-mysql`
+## Docker 报 `ms079-mysql` 不存在或不健康
 
 当前 Compose 使用：
 
 ```text
-network_mode: container:ms079-mysql
+network_mode: service:ms079-mysql
 ```
 
-必须提前存在这个精确名称的运行中容器。仅安装 MySQL 到宿主机，或创建另一个名称的 MySQL 容器，都不能满足该配置。
+数据库由同一 Compose 项目创建。先运行 `docker compose config` 检查 `.env` 占位符，再用 `docker compose ps` 和 `docker compose logs ms079-mysql` 检查初始化或健康检查失败原因。
 
 ## Docker 容器运行但宿主机无法连接游戏端口
 
 因为服务端共享数据库容器的网络命名空间，端口必须在创建 `ms079-mysql` 时发布。不能通过给 `ms079-server` 增加普通 `ports` 来修复当前结构。
 
-检查数据库容器的实际端口映射、服务端日志和容器网络，不要只看 `compose.yaml`。
+检查数据库容器的实际端口映射、服务端日志和容器网络，不要只看 `docker-compose.yml`。
 
 ## Apple Silicon 上 MySQL 5.7 无法启动
 
@@ -177,7 +177,7 @@ network_mode: container:ms079-mysql
 ## 客户端黑屏、显示异常或无法退出
 
 - 使用 `Ctrl+Shift+F12` 触发守护脚本紧急停止；
-- 或运行 `V079紧急停止.bat`；
+- 或运行 `stop-client.bat`；
 - 检查客户端实际启动路径；
 - 检查 Windows 兼容层和显示模式；
 - 检查 `downloadinfo.dat` 属性；
@@ -188,15 +188,13 @@ network_mode: container:ms079-mysql
 
 本地 Shell 脚本会尝试创建 `logs`，Docker 也将宿主机 `./logs` 挂载为可写目录。检查运行用户是否有权限创建和写入，而不是直接使用管理员权限运行整个服务端。
 
-项目还有遗留的 `日志/logs/` 路径。Docker Compose 没有挂载该目录，因此删除并重建容器后，其中的文件可能消失；不要把容器可写层当作持久日志存储。
+Logback 和 `FileoutputUtil` 均写入 `/app/logs`，Docker Compose 将其映射到宿主机 `./logs`。容器重建不会删除该目录，但仍应配置日志轮转并限制访问。
 
-当前成功登录流程会向 `日志/logs/ACPW.txt` 写入账号、明文密码、MAC 和地址。这不是普通脱敏即可公开分享的日志：
+成功登录流程已经移除明文密码日志。迁移前生成的历史日志或备份仍可能包含旧凭据：
 
-- 只能使用隔离、可丢弃且不复用的测试密码；
 - 严格限制日志目录访问；
-- 不要上传整个 `日志/`；
-- 真实部署前先修复明文记录行为；
-- 已经使用过的真实或复用密码必须轮换。
+- 不要上传整个 `logs/`；
+- 已经在历史日志中出现过的真实或复用密码必须轮换。
 
 其他日志也可能包含账号、角色、地址和完整数据包。分享时只截取解决问题必需的最小片段，并逐字段脱敏。
 
@@ -208,7 +206,7 @@ network_mode: container:ms079-mysql
 
 ## assembly 分发包中的 BAT 无法启动
 
-当前 release descriptor 会打入根目录 BAT，却不会打入 `compose.yaml` 或 `Dockerfile`。两个服务端 BAT 都调用 Docker Compose，所以仅解压 `ms079-*-dist.zip` 后运行 BAT 会因缺少 Compose 项目文件而失败。
+当前 release descriptor 会打入根目录 BAT，却不会打入 `docker-compose.yml` 或 `Dockerfile`。两个服务端 BAT 都调用 Docker Compose，所以仅解压 `ms079-*-dist.zip` 后运行 BAT 会因缺少 Compose 项目文件而失败。
 
 这不是 Maven 依赖下载问题。应先选择明确的分发策略：要么把必要 Docker 文件加入归档并验证，要么使用与 `ms079.jar`、`lib/` 相匹配的原生 Java 启动脚本。当前 CI 不验证 assembly 归档的独立启动。
 

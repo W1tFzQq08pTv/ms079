@@ -56,7 +56,7 @@
 | Docker Desktop | [官方文档与下载入口](https://docs.docker.com/desktop/) | 官方，已访问 | Windows/macOS 常用安装方式，包含 Compose |
 | Docker Engine | [官方安装文档](https://docs.docker.com/engine/install/) | 官方，已访问 | Linux 可按发行版安装 |
 
-Docker 方式仍然需要准备外部 MySQL 5.7 容器。详见 [Docker 运行](docker.md)。
+Docker Compose 已包含 MySQL 5.7 服务、健康检查和本地数据目录映射。详见 [Docker 运行](docker.md)。
 
 ## v079 客户端与兼容资源
 

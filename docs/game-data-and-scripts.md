@@ -58,11 +58,11 @@ wz
 脚本位于：
 
 ```text
-脚本/npc
-脚本/事件
-脚本/任务
-脚本/传送点
-脚本/反应堆
+scripts/npc
+scripts/events
+scripts/quests
+scripts/portals
+scripts/reactors
 ```
 
 这些脚本由 Java 8 的 JavaScript 引擎加载，可能通过注入对象调用 Java 服务端 API。一个脚本能够通过语法编译，不代表它引用的 NPC、地图、任务、道具或 Java 方法在运行时一定存在。
@@ -106,7 +106,7 @@ mvnw.cmd --batch-mode --no-transfer-progress -Dtest=RepositoryDataValidationTest
 
 该测试会：
 
-1. 编译所有 `脚本/**/*.js`；
+1. 编译所有 `scripts/**/*.js`；
 2. 安全解析所有 `wz/**/*.xml`，禁用外部实体和外部 DTD；
 3. 检查服务端配置的必需键、重复键和数值范围。
 

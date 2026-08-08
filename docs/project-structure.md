@@ -10,12 +10,12 @@ ms079 由 Java 服务端、WZ XML 数据、JavaScript 游戏脚本和 MySQL 历�
 | --- | --- |
 | `pom.xml` | Maven 依赖、Java 8 编译、Ebean enhancement 和 release Profile |
 | `mvnw`、`mvnw.cmd` | Linux/macOS 和 Windows Maven Wrapper |
-| `服务端配置.ini` | 数据库、网络、倍率、职业、事件和日志配置 |
+| `config/server.properties` | 数据库、网络、倍率、职业、事件和日志配置 |
 | `db/ms079.sql` | 源自 MySQL 5.5.53、由 CI 在 MySQL 5.7 验证的完整历史数据转储，包含示例账号和角色 |
 | `wz/` | 服务端运行时读取的 WZ XML 数据 |
-| `脚本/` | NPC、事件、任务、传送点和反应堆 JavaScript |
+| `scripts/` | NPC、事件、任务、传送点和反应堆 JavaScript |
 | `Dockerfile` | Java 8 多阶段服务端镜像 |
-| `compose.yaml` | 只编排服务端容器，依赖外部 MySQL 容器 |
+| `docker-compose.yml` | 编排 MySQL 与服务端，并在数据库健康后启动服务端 |
 | `.github/` | CI、依赖审查、安全门禁和源码发布工作流 |
 | `SECURITY.md` | 安全范围、威胁边界和私密报告流程 |
 | `old-files/` | 历史归档；正常构建和运行不应依赖其中内容 |
@@ -35,7 +35,7 @@ com.github.mrzhqiang.maplestory
 包含当前应用入口、Guice 配置、数据库配置、领域对象和新的 WZ 管理实现。关键入口包括：
 
 - `MapleStoryApplication`：创建依赖注入容器并启动服务端；
-- `config.ServerConfiguration`：读取 `服务端配置.ini`；
+- `config.ServerConfiguration`：读取 `config/server.properties`；
 - `config.DatabaseConfiguration`：创建 Ebean 数据库配置；
 - `config.ServerProperties`：解析服务端参数；
 - `wz.WzManage`、`wz.WzData`：定位和加载 WZ XML。
@@ -46,7 +46,7 @@ com.github.mrzhqiang.maplestory
 gui.GUIApplication
 ```
 
-这是一个真实的遗留 Swing 应用入口，不只是图标资源。它可以启动同一个 `ApplicationStarter`，并提供保存、重载、公告、账号和道具等高权限管理操作。当前 Dockerfile、CI 和 `启动服务端-GUI.bat` 均不使用该入口；常规服务端入口仍是 `MapleStoryApplication`。
+这是一个真实的遗留 Swing 应用入口，不只是图标资源。它可以启动同一个 `ApplicationStarter`，并提供保存、重载、公告、账号和道具等高权限管理操作。当前 Dockerfile、CI 和 `start-server.bat` 均不使用该入口；常规服务端入口仍是 `MapleStoryApplication`。
 
 ### 服务端业务
 
@@ -95,7 +95,7 @@ client
 scripting
 ```
 
-负责加载和执行 `脚本/` 下的 JavaScript，包括 NPC、事件、任务、传送点和反应堆。项目依赖 Java 8 自带的 JavaScript 引擎及其 `Compilable` 能力，这也是数据校验固定使用 Java 8 的原因之一。
+负责加载和执行 `scripts/` 下的 JavaScript，包括 NPC、事件、任务、传送点和反应堆。项目依赖 Java 8 自带的 JavaScript 引擎及其 `Compilable` 能力，这也是数据校验固定使用 Java 8 的原因之一。
 
 ### 数据库访问
 
@@ -144,9 +144,9 @@ KinMS
 项目并存两套日志机制：
 
 - Logback 输出到 `logs/application.log` 并保留按日期滚动的压缩文件；
-- `tools.FileoutputUtil` 输出到 `日志/logs/` 等历史路径。
+- `tools.FileoutputUtil` 的分类日志也统一输出到 `logs/` 下。
 
-后者被多个账号、反作弊、脚本和数据包路径直接调用。当前成功登录流程会把明文密码写入遗留日志，这是需要优先修复的安全限制。任何开发者都不应把真实账号用于当前联调环境，也不能把这些日志作为普通调试附件公开上传。
+后者被多个账号、反作弊、脚本和数据包路径直接调用。成功登录流程已经移除明文密码日志，但迁移前生成的历史日志或备份仍可能含有旧凭据，不能作为普通调试附件公开上传。
 
 ## 测试结构
 
@@ -154,9 +154,9 @@ KinMS
 
 `RepositoryDataValidationTest` 是仓库级数据门禁，负责：
 
-- 使用 Java 8 JavaScript 引擎编译全部 `脚本/**/*.js`；
+- 使用 Java 8 JavaScript 引擎编译全部 `scripts/**/*.js`；
 - 以禁用外部实体的安全配置解析全部 `wz/**/*.xml`；
-- 检查 `服务端配置.ini` 的必需键、重复键、端口和倍率范围。
+- 检查 `config/server.properties` 的必需键、重复键、端口和倍率范围。
 
 它不连接真实数据库，也不证明完整游戏流程正确。普通 Ebean 测试使用内存 H2；真实 MySQL 5.7 初始化和启动由 CI 的独立 Docker 冒烟脚本覆盖。
 
@@ -165,7 +165,7 @@ KinMS
 ```text
 MapleStoryApplication
     │
-    ├── ServerConfiguration ──> 服务端配置.ini
+    ├── ServerConfiguration ──> config/server.properties
     ├── DatabaseConfiguration ─> MySQL / Ebean
     │
     └── ApplicationStarter

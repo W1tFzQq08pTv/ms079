@@ -4,7 +4,7 @@
 
 This is a Java 8 MapleStory v079 server built with Maven. Production code lives in `src/main/java`: `com.github.mrzhqiang.maplestory` contains application, configuration, domain, and WZ layers; `server`, `handling`, and `client` contain gameplay, protocol, and session logic; `scripting` loads game scripts. Resources are in `src/main/resources`; tests and fixtures are under `src/test`.
 
-Repository data is part of the application: `wz/` stores WZ XML, `脚本/` stores JavaScript game logic, `db/ms079.sql` initializes MySQL, and `服务端配置.ini` controls runtime settings. `old-files/` is archival. See `docs/` for architecture and operations notes.
+Repository data is part of the application: `wz/` stores WZ XML, `scripts/` stores JavaScript game logic, `db/ms079.sql` initializes MySQL, and `config/server.properties` controls runtime settings. `old-files/` is archival. See `docs/` for architecture and operations notes.
 
 ## Build, Test, and Development Commands
 
@@ -14,7 +14,7 @@ Repository data is part of the application: `wz/` stores WZ XML, `脚本/` store
 - `./mvnw -Dtest=MapleKeyLayoutTest test` — run one test class.
 - `./mvnw -Dtest=RepositoryDataValidationTest test` — validate all scripts, WZ XML, and server configuration.
 - `./mvnw -Prelease clean package` — create the full assembly distribution.
-- `docker compose up -d --build ms079-server` — build and start the server against the existing `ms079-mysql` container.
+- `docker compose up -d --build` — build and start MySQL plus the server; the server waits for the database health check.
 
 ## Coding Style & Naming Conventions
 
@@ -30,4 +30,4 @@ History favors concise subjects such as `ci：增加标签源码发布工作流`
 
 ## Security & Configuration
 
-Use isolated development credentials. `服务端配置.ini`, generated logs, and legacy login logging may expose sensitive values; redact them from issues and PRs. Follow `SECURITY.md` for private vulnerability reporting.
+Use isolated development credentials. `config/server.properties`, generated logs, and legacy login logging may expose sensitive values; redact them from issues and PRs. Follow `SECURITY.md` for private vulnerability reporting.

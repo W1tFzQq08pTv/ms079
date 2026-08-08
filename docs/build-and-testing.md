@@ -87,7 +87,7 @@ CI 使用非交互参数：
 
 当前配置测试允许频道数最高为 100，而运行时最多启动 10 个频道；它也不会检查逗号列表内部的重复事件名或 ID。测试通过不代表这两类配置具有预期运行效果。
 
-修改 `脚本/`、`wz/` 或 `服务端配置.ini` 时，这项检查是最低要求。
+修改 `scripts/`、`wz/` 或 `config/server.properties` 时，这项检查是最低要求。
 
 ## Docker 静态校验
 
@@ -163,9 +163,9 @@ Pull Request 修改依赖时检查新增依赖风险，当前门槛会阻止达�
 | 仅 Markdown 文档 | 检查链接、`git diff --check` |
 | 单个 Java 工具或纯函数 | 相关单元测试、编译 |
 | 网络、账号、角色、道具或数据库逻辑 | 相关测试、`verify`、必要的真实流程 |
-| `脚本/` | `RepositoryDataValidationTest`、目标脚本真实流程 |
+| `scripts/` | `RepositoryDataValidationTest`、目标脚本真实流程 |
 | `wz/` | `RepositoryDataValidationTest`、完整重启和目标数据验证 |
-| `服务端配置.ini` | `RepositoryDataValidationTest`、启动检查、秘密检查 |
+| `config/server.properties` | `RepositoryDataValidationTest`、启动检查、秘密检查 |
 | `db/ms079.sql` | SQL 导入、核心表检查、服务端启动 |
 | Dockerfile/Compose | Docker 静态检查、镜像构建、MySQL 启动冒烟 |
 
