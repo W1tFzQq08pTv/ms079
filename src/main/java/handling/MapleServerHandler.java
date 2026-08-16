@@ -216,13 +216,8 @@ public class MapleServerHandler extends IoHandlerAdapter implements MapleServerH
 
     @Override
     public void exceptionCaught(final IoSession session, final Throwable cause) throws Exception {
-        /*
-         * MapleClient client = (MapleClient)
-         * session.getAttribute(MapleClient.CLIENT_KEY);
-         * log.error(MapleClient.getLogMessage(client, cause.getMessage()),
-         * cause);
-         */
-//	cause.printStackTrace();
+        LOGGER.warn("Unhandled session exception: remoteAddress={}, channel={}, cashShop={}",
+                session.getRemoteAddress(), channel, cs, cause);
     }
 
     @Override
