@@ -56,6 +56,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Serializable {
 
+    private static final int MAX_CASH_POINT_BALANCE = 1_000_000_000;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(MapleCharacter.class);
     private static final long MOVE_ITEM_COOLDOWN_MILLIS = 250L;
 
@@ -3405,8 +3407,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     }
 
     public void gainDY(int gain) {
-        this.maplepoints += gain;
-        // setDY(getDY() + gain);
+        modifyCSPoints(2, gain, false);
     }
 
     public void gainMeso(int gain, boolean show) {
@@ -4409,22 +4410,24 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
 
         switch (type) {
             case 1:
-                if (acash + quantity < 0) {
+                int updatedACash = calculateCashPointBalance(acash, quantity);
+                if (updatedACash == acash && quantity != 0) {
                     if (show) {
                         dropMessage(5, "你的点卷已经满了");
                     }
                     return;
                 }
-                acash += quantity;
+                acash = updatedACash;
                 break;
             case 2:
-                if (maplepoints + quantity < 0) {
+                int updatedMaplePoints = calculateCashPointBalance(maplepoints, quantity);
+                if (updatedMaplePoints == maplepoints && quantity != 0) {
                     if (show) {
                         dropMessage(5, "你的抵用卷已经满了.");
                     }
                     return;
                 }
-                maplepoints += quantity;
+                maplepoints = updatedMaplePoints;
                 break;
             default:
                 break;
@@ -4433,6 +4436,11 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
             dropMessage(5, "你已经 " + (quantity > 0 ? "获得 " : "使用 ") + quantity + (type == 1 ? " 点卷." : " 抵用卷."));
             //client.getSession().write(MaplePacketCreator.showSpecialEffect(19));
         }
+    }
+
+    static int calculateCashPointBalance(int current, int quantity) {
+        long updated = (long) current + quantity;
+        return updated < 0 || updated > MAX_CASH_POINT_BALANCE ? current : (int) updated;
     }
 
     public int getCSPoints(int type) {
