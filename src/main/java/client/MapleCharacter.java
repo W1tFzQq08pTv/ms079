@@ -56,7 +56,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Serializable {
 
-    private static final int MAX_CASH_POINT_BALANCE = 1_000_000_000;
+    private static final int MAX_CASH_POINT_BALANCE = 999_999_999;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MapleCharacter.class);
     private static final long MOVE_ITEM_COOLDOWN_MILLIS = 250L;
@@ -4443,12 +4443,16 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         return updated < 0 || updated > MAX_CASH_POINT_BALANCE ? current : (int) updated;
     }
 
+    static int clientSafeCashPointBalance(int balance) {
+        return Math.max(0, Math.min(MAX_CASH_POINT_BALANCE, balance));
+    }
+
     public int getCSPoints(int type) {
         switch (type) {
             case 1:
-                return acash;
+                return clientSafeCashPointBalance(acash);
             case 2:
-                return maplepoints;
+                return clientSafeCashPointBalance(maplepoints);
             default:
                 return 0;
         }

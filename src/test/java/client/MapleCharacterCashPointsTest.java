@@ -8,8 +8,19 @@ public class MapleCharacterCashPointsTest {
 
     @Test
     public void rejectsBalancesAboveTheClientSafeLimit() {
-        assertEquals(1_000_000_000,
-                MapleCharacter.calculateCashPointBalance(1_000_000_000, 1));
+        assertEquals(999_999_999,
+                MapleCharacter.calculateCashPointBalance(999_999_999, 1));
+    }
+
+    @Test
+    public void clampsExistingTenDigitBalancesForClientPackets() {
+        assertEquals(999_999_999,
+                MapleCharacter.clientSafeCashPointBalance(1_000_000_000));
+    }
+
+    @Test
+    public void clampsInvalidNegativeBalancesForClientPackets() {
+        assertEquals(0, MapleCharacter.clientSafeCashPointBalance(-1));
     }
 
     @Test
