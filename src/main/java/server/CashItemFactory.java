@@ -1,9 +1,11 @@
 package server;
 
+import com.github.mrzhqiang.maplestory.domain.DCashShopModifiedItem;
 import com.github.mrzhqiang.maplestory.wz.WzData;
 import com.github.mrzhqiang.maplestory.wz.WzElement;
 import com.github.mrzhqiang.maplestory.wz.WzFile;
 import com.github.mrzhqiang.maplestory.wz.element.Elements;
+import io.ebean.DB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.CashItemInfo.CashModInfo;
@@ -17,9 +19,6 @@ public class CashItemFactory {
 
     private final static CashItemFactory instance = new CashItemFactory();
     private final static int[] BEST_ITEMS = new int[]{50400041, 50400016, 50400135, 50400061, 20800204};
-    private static final int NO_OVERRIDE = -1;
-    private static final int NO_MARK = -2;
-
     private final Map<Integer, List<CashItemInfo>> cashPackages = new HashMap<>();
 
     private boolean initialized = false;
@@ -51,14 +50,87 @@ public class CashItemFactory {
         for (int i : itemids) {
             getPackageItems(i);
         }
-        // This private server intentionally exposes the complete v079 commodity catalog.
-        // A show-up-only override keeps the CS_OPEN packet below the legacy packet limit;
-        // all other fields continue to come from Commodity.img.
-        for (int sn : itemStats.keySet()) {
-            itemMods.put(sn, new CashModInfo(sn, 0, NO_MARK, true, 0, NO_OVERRIDE,
-                    false, 0, NO_OVERRIDE, 0, 0, 0, 0, 0, 0));
-        }
+        loadModifications(DB.find(DCashShopModifiedItem.class).findList(), itemStats.values());
         initialized = true;
+    }
+
+    void loadModifications(Collection<DCashShopModifiedItem> modifications) {
+        loadModifications(modifications, Collections.<CashItemInfo>emptyList());
+    }
+
+    void loadModifications(Collection<DCashShopModifiedItem> modifications,
+                           Collection<CashItemInfo> commodities) {
+        itemMods.clear();
+        Map<Integer, CashItemInfo> commoditiesBySerial = commodities.stream()
+                .collect(Collectors.toMap(CashItemInfo::getSN, item -> item));
+        int hiddenCount = 0;
+        int nonCashItemCount = 0;
+        int nonPurchasableCount = 0;
+        int mesoPricedCount = 0;
+        for (DCashShopModifiedItem item : modifications) {
+            if (!Boolean.TRUE.equals(item.showup)) {
+                hiddenCount++;
+                continue;
+            }
+            CashItemInfo commodity = commoditiesBySerial.get(item.serial);
+            if (commodity != null && !isCashShopItem(commodity)) {
+                nonCashItemCount++;
+                continue;
+            }
+            if (item.meso > 0) {
+                mesoPricedCount++;
+                continue;
+            }
+            CashModInfo modification = modificationOf(item, commodity);
+            CashItemInfo effectiveItem = modification.toCItem(commodity);
+            if (commodity != null && (effectiveItem.getPrice() <= 0 || effectiveItem.getCount() <= 0)) {
+                nonPurchasableCount++;
+                continue;
+            }
+            itemMods.put(item.serial, modification);
+        }
+        LOGGER.info("Loaded {} cash-shop modifications; ignored {} hidden rows, {} non-cash rows, {} "
+                        + "non-purchasable rows, and {} meso-priced rows",
+                itemMods.size(), hiddenCount, nonCashItemCount, nonPurchasableCount, mesoPricedCount);
+    }
+
+    private CashModInfo modificationOf(DCashShopModifiedItem item, CashItemInfo commodity) {
+        int itemId = commodity == null ? item.itemid : 0;
+        int discountPrice = unchanged(item.discountPrice, commodity == null ? 0 : commodity.getPrice())
+                ? 0 : item.discountPrice;
+        int period = unchanged(item.period, commodity == null ? 0 : commodity.getPeriod())
+                ? 0 : item.period;
+        int gender = commodity != null && item.gender == commodity.getGender() ? -1 : item.gender;
+        int count = unchanged(item.count, commodity == null ? 0 : commodity.getCount())
+                ? 0 : item.count;
+        int priority = item.priority > 0 ? item.priority : -1;
+        CashModInfo modification = new CashModInfo(item.serial, discountPrice, catalogMark(item.mark), item.showup,
+                itemId, priority, item.packageField, period, gender, count,
+                item.meso, item.unk1, item.unk2, item.unk3, item.extraFlags);
+        modification.catalogBucket = catalogBucket(item.serial, commodity);
+        return modification;
+    }
+
+    private boolean unchanged(int overrideValue, int commodityValue) {
+        return overrideValue <= 0 || overrideValue == commodityValue;
+    }
+
+    private int catalogMark(int mark) {
+        // The bundled catalog uses 0 as its default, not as an explicit NEW badge.
+        // Only serialize the client-defined promotional marks (sale, hot, event).
+        return mark >= 1 && mark <= 3 ? mark : -2;
+    }
+
+    private int catalogBucket(int serial, CashItemInfo commodity) {
+        int category = serial / 10000000;
+        if (category == 1 && commodity != null) {
+            return (category * 1000) + (commodity.getId() / 10000);
+        }
+        return category * 1000;
+    }
+
+    boolean isCashShopItem(CashItemInfo item) {
+        return MapleItemInformationProvider.getInstance().isCash(item.getId());
     }
 
     private void handleCashItemInfo(CashItemInfo info) {

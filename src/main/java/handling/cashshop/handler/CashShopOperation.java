@@ -106,23 +106,37 @@ public class CashShopOperation {
             LOGGER.info("Cash-shop entry accepted: characterId={}, accountId={}, loginState={}, csOpenBytes={}",
                     chr.getId(), chr.getAccountID(), state, csOpen.getBytes().length);
             c.getSession().write(csOpen);
-            CSUpdate(c);
+            if (ServerConstants.properties.isCashShopPostOpenPackets()) {
+                CSUpdate(c);
+            } else {
+                LOGGER.warn("Cash-shop post-open packets disabled for protocol isolation: characterId={}, accountId={}",
+                        chr.getId(), chr.getAccountID());
+            }
         }
     }
 
     public static void CSUpdate(final MapleClient c) {
-
-        c.sendPacket(MTSCSPacket.showCashInventory(c));
-        c.getSession().write(MTSCSPacket.sendWishList(c.getPlayer(), false));
-        c.getSession().write(MTSCSPacket.showNXMapleTokens(c.getPlayer()));
-        //   c.getSession().write(MTSCSPacket.getCSInventory(c));
-        c.getSession().write(MTSCSPacket.getCSGifts(c));
-        //c.getSession().write(MTSCSPacket.getCSInventory(c));
-        //  doCSPackets(c);
+        if (ServerConstants.properties.isCashShopSendCashInventory()) {
+            sendCashShopPacket(c, "cash-inventory", MTSCSPacket.showCashInventory(c));
+        }
+        if (ServerConstants.properties.isCashShopSendWishList()) {
+            sendCashShopPacket(c, "wish-list", MTSCSPacket.sendWishList(c.getPlayer(), false));
+        }
+        if (ServerConstants.properties.isCashShopSendCashPoints()) {
+            sendCashShopPacket(c, "cash-points", MTSCSPacket.showNXMapleTokens(c.getPlayer()));
+        }
+        if (ServerConstants.properties.isCashShopSendGifts()) {
+            sendCashShopPacket(c, "gifts", MTSCSPacket.getCSGifts(c));
+        }
     }
 
     public static void TouchingCashShop(final MapleClient c) {
-        c.getSession().write(MTSCSPacket.showNXMapleTokens(c.getPlayer()));
+        boolean sendCashPoints = ServerConstants.properties.isCashShopSendTouchingCashPoints();
+        LOGGER.info("Cash-shop touch request: characterId={}, sendCashPoints={}",
+                c.getPlayer().getId(), sendCashPoints);
+        if (sendCashPoints) {
+            sendCashShopPacket(c, "touching-cash-points", MTSCSPacket.showNXMapleTokens(c.getPlayer()));
+        }
     }
 
     public static void CouponCode(final String code, final MapleClient c) {
@@ -212,6 +226,8 @@ public class CashShopOperation {
                 int useNX = slea.readByte() + 1;
                 int snCS = slea.readInt();
                 CashItemInfo item = CashItemFactory.getInstance().getItem(snCS);
+                LOGGER.info("Cash-shop purchase request: characterId={}, sn={}, paymentType={}, itemPresent={}",
+                        chr.getId(), snCS, useNX, item != null);
                 if (item == null) {
                     chr.dropMessage(1, "该物品暂未开放！");
                     doCSPackets(c);
@@ -224,8 +240,10 @@ public class CashShopOperation {
                         return;
                     }
                 }
-                if (item.getPrice() < 100) {
-                    c.getPlayer().dropMessage(1, "价格(" + item.getPrice() + ")低于100点卷的物品是禁止购买的.");
+                if (item.getPrice() <= 0) {
+                    LOGGER.warn("Cash-shop purchase rejected: characterId={}, sn={}, itemId={}, invalidPrice={}",
+                            chr.getId(), snCS, item.getId(), item.getPrice());
+                    c.getPlayer().dropMessage(1, "该物品价格异常，暂时无法购买。");
                     doCSPackets(c);
                     return;
                 }
@@ -288,15 +306,24 @@ public class CashShopOperation {
                         }
                         chr.getCashInventory().addToInventory(itemz);
                         //c.getSession().write(MTSCSPacket.confirmToCSInventory(itemz, c.getAccID(), item.getSN()));
-                        c.getSession().write(MTSCSPacket.showBoughtCSItem(itemz, item.getSN(), c.getAccID()));
+                        sendCashShopPacket(c, "purchase-result",
+                                MTSCSPacket.showBoughtCSItem(itemz, item.getSN(), c.getAccID()));
                     } else {
+                        LOGGER.warn("Cash-shop purchase rejected: characterId={}, sn={}, itemId={}, reason=item-conversion",
+                                chr.getId(), snCS, item.getId());
                         c.getSession().write(MTSCSPacket.sendCSFail(0));
                     }
                 } else {
+                    LOGGER.warn("Cash-shop purchase rejected: characterId={}, sn={}, itemId={}, paymentType={}, price={}, balance={}",
+                            chr.getId(), snCS, item.getId(), useNX, item.getPrice(), chr.getCSPoints(useNX));
                     c.getSession().write(MTSCSPacket.sendCSFail(0));
                 }       //  c.getPlayer().saveToDB(true, true);
-                c.getSession().write(MTSCSPacket.showNXMapleTokens(c.getPlayer())); //显示点卷
-                c.getSession().write(MaplePacketCreator.enableActions()); //能行动
+                if (ServerConstants.properties.isCashShopSendCashPoints()) {
+                    sendCashShopPacket(c, "cash-points", MTSCSPacket.showNXMapleTokens(c.getPlayer()));
+                }
+                if (ServerConstants.properties.isCashShopSendRefreshControls()) {
+                    c.getSession().write(MaplePacketCreator.enableActions());
+                }
                 break;
             }
             case 4:
@@ -307,17 +334,17 @@ public class CashShopOperation {
                 String recipient = slea.readMapleAsciiString();
                 String message = slea.readMapleAsciiString();
                 final CashItemInfo item = CashItemFactory.getInstance().getItem(snCS);
+                if (item == null || item.getPrice() <= 0) {
+                    c.getSession().write(MTSCSPacket.sendCSFail(0));
+                    doCSPackets(c);
+                    return;
+                }
                 IItem itemz = chr.getCashInventory().toItem(item);
                 if (c.getPlayer().isAdmin()) {
                     LOGGER.debug("包裹购买 ID: " + snCS);
                 }
-                if (item.getPrice() < 100) {
-                    c.getPlayer().dropMessage(1, "价格低于100点卷的物品是禁止购买的.");
-                    doCSPackets(c);
-                    return;
-                }
                 if (itemz != null && itemz.getUniqueId() > 0 && itemz.getItemId() == item.getId() && itemz.getQuantity() == item.getCount()) {
-                    if (item == null || c.getPlayer().getCSPoints(type) < item.getPrice() || message.length() > 73 || message.length() < 1) { //dont want packet editors gifting random stuff =P
+                    if (c.getPlayer().getCSPoints(type) < item.getPrice() || message.length() > 73 || message.length() < 1) { //dont want packet editors gifting random stuff =P
                         c.getSession().write(MTSCSPacket.sendCSFail(0));
                         doCSPackets(c);
                         return;
@@ -720,20 +747,31 @@ public class CashShopOperation {
     }
 
     private static void RefreshCashShop(MapleClient c) {
-        c.sendPacket(MTSCSPacket.showCashInventory(c));
-        c.sendPacket(MTSCSPacket.showNXMapleTokens(c.getPlayer()));
-        c.sendPacket(MTSCSPacket.enableCSUse());
+        if (ServerConstants.properties.isCashShopSendCashInventory()) {
+            sendCashShopPacket(c, "cash-inventory", MTSCSPacket.showCashInventory(c));
+        }
+        if (ServerConstants.properties.isCashShopSendCashPoints()) {
+            sendCashShopPacket(c, "cash-points", MTSCSPacket.showNXMapleTokens(c.getPlayer()));
+        }
+        if (ServerConstants.properties.isCashShopSendRefreshControls()) {
+            c.sendPacket(MTSCSPacket.enableCSUse());
+        }
         c.getPlayer().getCashInventory().checkExpire(c);
     }
 
     private static void doCSPackets(MapleClient c) {
-        c.getSession().write(MTSCSPacket.getCSInventory(c));
-        c.getSession().write(MTSCSPacket.enableCSorMTS());
-        c.getSession().write(MTSCSPacket.sendWishList(c.getPlayer(), false));
-        c.getSession().write(MTSCSPacket.showNXMapleTokens(c.getPlayer()));
-        // c.getSession().write(MTSCSPacket.enableCSUse());
-        c.getSession().write(MaplePacketCreator.enableActions());
+        CSUpdate(c);
+        if (ServerConstants.properties.isCashShopSendRefreshControls()) {
+            c.getSession().write(MTSCSPacket.enableCSorMTS());
+            c.getSession().write(MaplePacketCreator.enableActions());
+        }
         c.getPlayer().getCashInventory().checkExpire(c);
+    }
+
+    private static void sendCashShopPacket(MapleClient c, String type, MaplePacket packet) {
+        LOGGER.info("Cash-shop packet sent: characterId={}, type={}, bytes={}",
+                c.getPlayer().getId(), type, packet.getBytes().length);
+        c.getSession().write(packet);
     }
 
     private static boolean isCashBlocked(int itemId) {

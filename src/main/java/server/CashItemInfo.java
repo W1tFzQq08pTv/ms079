@@ -79,6 +79,7 @@ public class CashItemInfo {
     public static class CashModInfo {
 
         public int discountPrice, mark, priority, sn, itemid, flags, period, gender, count, meso, unk_1, unk_2, unk_3, extra_flags;
+        public int catalogBucket;
         public boolean showUp, packagez;
         private CashItemInfo cii;
 
@@ -100,6 +101,7 @@ public class CashItemInfo {
             this.unk_2 = unk_2;
             this.unk_3 = unk_3;
             this.extra_flags = extra_flags;
+            this.catalogBucket = sn / 10000000;
             this.flags = extra_flags;
 
             if (this.itemid > 0) {
@@ -133,7 +135,7 @@ public class CashItemInfo {
             if (this.showUp) {
                 this.flags |= 0x400;
             }
-            if (this.mark >= -1 && this.mark <= 3) {
+            if (this.mark >= 0 && this.mark <= 3) {
                 this.flags |= 0x800;
             }
             if (this.unk_3 > 0) {
@@ -151,8 +153,10 @@ public class CashItemInfo {
             }
             final int item, c, price, expire, gen;
             final boolean onSale;
-            if (itemid <= 0) {
-                item = (backup == null ? 0 : backup.getId());
+            // Commodity.img owns the SN-to-item mapping. A stale database
+            // override must never turn a purchase into a different item.
+            if (backup != null) {
+                item = backup.getId();
             } else {
                 item = itemid;
             }
