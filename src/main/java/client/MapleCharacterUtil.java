@@ -84,9 +84,8 @@ public class MapleCharacterUtil {
     }
 
     public static final int getIdByName(final String name) {
-        Connection con = DatabaseConnection.getConnection();
-        try {
-            PreparedStatement ps = con.prepareStatement("SELECT id FROM characters WHERE name = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT id FROM characters WHERE name = ?")) {
             ps.setString(1, name);
             final ResultSet rs = ps.executeQuery();
 

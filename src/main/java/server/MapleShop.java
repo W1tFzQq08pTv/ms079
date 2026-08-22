@@ -164,7 +164,7 @@ public class MapleShop {
          */
     }
 
-    public void sell(MapleClient c, MapleInventoryType type, byte slot, short quantity) {
+    public void sell(MapleClient c, MapleInventoryType type, byte slot, int quantity) {
         if (quantity == 0xFFFF || quantity == 0) {
             quantity = 1;
         }
@@ -180,7 +180,7 @@ public class MapleShop {
             AutobanManager.getInstance().addPoints(c, 1000, 0, "Selling " + quantity + " " + item.getItemId() + " (" + type.name() + "/" + slot + ")");
             return;
         }
-        short iQuant = item.getQuantity();
+        int iQuant = Short.toUnsignedInt(item.getQuantity());
         if (iQuant == 0xFFFF) {
             iQuant = 1;
         }
@@ -189,7 +189,6 @@ public class MapleShop {
             return;
         }
         if (quantity <= iQuant && iQuant > 0) {
-            MapleInventoryManipulator.removeFromSlot(c, type, slot, quantity, false);
             double price;
             if (GameConstants.isThrowingStar(item.getItemId()) || GameConstants.isBullet(item.getItemId())) {
                 price = ii.getWholePrice(item.getItemId()) / (double) ii.getSlotMax(c, item.getItemId());
@@ -197,11 +196,18 @@ public class MapleShop {
                 price = ii.getPrice(item.getItemId());
             }
             final int recvMesos = (int) Math.max(Math.ceil(price * quantity), 0);
-            if (price != -1.0 && recvMesos > 0) {
-                c.getPlayer().gainMeso(recvMesos, false);
+            if (price < 0 || !canReceiveMesos(c.getPlayer().getMeso(), recvMesos)) {
+                c.getSession().write(MaplePacketCreator.confirmShopTransaction((byte) 0x20));
+                return;
             }
+            MapleInventoryManipulator.removeFromSlot(c, type, slot, (short) quantity, false);
+            c.getPlayer().gainMeso(recvMesos, false);
             c.getSession().write(MaplePacketCreator.confirmShopTransaction((byte) 0x8));
         }
+    }
+
+    static boolean canReceiveMesos(int currentMesos, int receivedMesos) {
+        return receivedMesos > 0 && (long) currentMesos + receivedMesos <= Integer.MAX_VALUE;
     }
 
     public void recharge(final MapleClient c, final byte slot) {

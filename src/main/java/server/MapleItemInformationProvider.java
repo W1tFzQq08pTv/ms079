@@ -161,8 +161,7 @@ public class MapleItemInformationProvider {
     }
 
     public void runItems() {
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
 
             // Load Item Data
             PreparedStatement ps = con.prepareStatement("SELECT * FROM wz_itemdata");
@@ -683,10 +682,10 @@ public class MapleItemInformationProvider {
         if (item == null) {
             return -1;
         }
-        double pEntry = item.findByName("info")
-                .map(element -> Elements.findDouble(element, "unitPrice"))
-                .orElseGet(() -> item.findByName("info")
-                        .map(element -> Elements.findDouble(element, "price"))
+        double pEntry = item.findByName("info/unitPrice")
+                .map(Elements::ofDouble)
+                .orElseGet(() -> item.findByName("info/price")
+                        .map(Elements::ofDouble)
                         .orElse((double) -1));
         if (itemId == 2070019 || itemId == 2330007) {
             pEntry = 1.0;

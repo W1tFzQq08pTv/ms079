@@ -33,8 +33,7 @@ public class MapleFamily implements java.io.Serializable {
     public MapleFamily(final int fid) {
         super();
 
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement("SELECT * FROM families WHERE familyid = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             ps.setInt(1, fid);
             ResultSet rs = ps.executeQuery();
@@ -152,8 +151,7 @@ public class MapleFamily implements java.io.Serializable {
     public static final Collection<MapleFamily> loadAll() {
         final Collection<MapleFamily> ret = new ArrayList<MapleFamily>();
         MapleFamily g;
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement("SELECT familyid FROM families");
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {

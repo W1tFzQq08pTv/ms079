@@ -175,7 +175,7 @@ public final class ApplicationStarter {
         }
         World.registerRespawn();
         loginServer.setOn();
-        LOGGER.info("经验倍率：{}，物品倍率：{}，金币倍率：{}", properties.getExpRate(), properties.getDropRate(), properties.getGoldRate());
+        LOGGER.info("经验倍率：{}，稀有物品倍率：{}，金币倍率：{}", properties.getExpRate(), properties.getDropRate(), properties.getGoldRate());
         LOGGER.info("普通怪物刷新间隔：{} 毫秒", properties.getMobRespawnInterval());
         LOGGER.info("普通怪物密度倍率：{}", properties.getMobDensityMultiplier());
         LOGGER.info("当前开放职业：冒险家 = {}, 骑士团 = {}, 战神 = {}", properties.isAdventurer(), properties.isKnights(), properties.isWarGod());

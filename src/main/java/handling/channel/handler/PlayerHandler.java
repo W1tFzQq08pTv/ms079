@@ -45,6 +45,56 @@ public class PlayerHandler {
         return false;
     }
 
+    static boolean readWheelRequested(final SeekableLittleEndianAccessor slea) {
+        if (slea.available() >= 7) {
+            slea.readInt(); // client tick
+        }
+        if (slea.available() >= 3) {
+            slea.skip(1); // reserved
+        }
+        if (slea.available() >= 2) {
+            return slea.readShort() > 0;
+        }
+        return slea.available() == 1 && slea.readByte() > 0;
+    }
+
+    private static void handleDeathReturn(final MapleClient c, final MapleCharacter chr, final boolean wheel) {
+        chr.setStance(0);
+        if (chr.getEventInstance() != null && chr.getEventInstance().revivePlayer(chr) && chr.isAlive()) {
+            return;
+        }
+        if (chr.getPyramidSubway() != null) {
+            chr.getStat().setHp((short) 50);
+            chr.getPyramidSubway().fail(chr);
+            return;
+        }
+        if (!wheel) {
+            chr.getStat().setHp((short) 50);
+            final MapleMap to = chr.getMap().getReturnMap();
+            if (to == null || to.getPortal(0) == null) {
+                LOGGER.warn("Unable to resolve death return map: characterId={}, mapId={}", chr.getId(), chr.getMapId());
+                chr.updateSingleStat(MapleStat.HP, 50);
+                c.getSession().write(MaplePacketCreator.enableActions());
+                return;
+            }
+            chr.changeMap(to, to.getPortal(0));
+            return;
+        }
+
+        c.getSession().write(MTSCSPacket.useWheel((byte) (chr.getInventory(MapleInventoryType.CASH).countById(5510000) - 1)));
+        chr.getStat().setHp((chr.getStat().getMaxHp() / 100) * 40);
+        MapleInventoryManipulator.removeById(c, MapleInventoryType.CASH, 5510000, 1, true, false);
+
+        final MapleMap to = chr.getMap();
+        if (to.getPortal(0) == null) {
+            LOGGER.warn("Unable to resolve wheel revival portal: characterId={}, mapId={}", chr.getId(), chr.getMapId());
+            chr.updateSingleStat(MapleStat.HP, chr.getStat().getHp());
+            c.getSession().write(MaplePacketCreator.enableActions());
+            return;
+        }
+        chr.changeMap(to, to.getPortal(0));
+    }
+
     public static void ChangeMonsterBookCover(final int bookid, final MapleClient c, final MapleCharacter chr) {
         if (bookid == 0 || GameConstants.isMonsterCard(bookid)) {
             chr.setMonsterBookCover(bookid);
@@ -1218,7 +1268,17 @@ public class PlayerHandler {
             return;
         }
         if (slea.available() != 0) {
-//            slea.skip(6); //D3 75 00 00 00 00
+            final long packetLength = slea.available();
+            if (packetLength < 7) {
+                if (!chr.isAlive()) {
+                    LOGGER.warn("Short death return packet: characterId={}, mapId={}, bytes={}",
+                            chr.getId(), chr.getMapId(), packetLength);
+                    handleDeathReturn(c, chr, false);
+                } else {
+                    c.getSession().write(MaplePacketCreator.enableActions());
+                }
+                return;
+            }
             final byte changeType = slea.readByte(); // 1 = from dying 2 = regular portals
             int targetid = slea.readInt(); // FF FF FF FF
             if (targetid == 0) {
@@ -1226,42 +1286,14 @@ public class PlayerHandler {
             }
             final String portalName = slea.readMapleAsciiString();
             final MaplePortal portal = chr.getMap().getPortal(portalName);
-            /*
-             * if (slea.available() >= 7) { chr.updateTick(slea.readInt()); }
-             */
-            //  slea.skip(1);
-            final boolean wheel = slea.readShort() > 0 && !MapConstants.isEventMap(chr.getMapId()) && chr.haveItem(5510000, 1, false, true);
+            final boolean wheelRequested = readWheelRequested(slea);
+            final boolean wheel = wheelRequested && !MapConstants.isEventMap(chr.getMapId())
+                    && chr.haveItem(5510000, 1, false, true);
 
             if (!chr.isAlive()) {
-                LOGGER.info("Death return requested: characterId={}, mapId={}, changeType={}, targetId={}, portal={}, wheel={}",
-                        chr.getId(), chr.getMapId(), changeType, targetid, portalName, wheel);
-                chr.setStance(0);
-                if (chr.getEventInstance() != null && chr.getEventInstance().revivePlayer(chr) && chr.isAlive()) {
-                    return;
-                }
-                if (chr.getPyramidSubway() != null) {
-                    chr.getStat().setHp((short) 50);
-                    chr.getPyramidSubway().fail(chr);
-                    return;
-                }
-                if (!wheel) {
-                    chr.getStat().setHp((short) 50);
-                    MapleMap to = chr.getMap().getReturnMap();
-                    /*if (to == null) {//修复死亡不回城
-                        chr.setHp(50);
-                        chr.updateSingleStat(MapleStat.HP, 50);
-                        c.getSession().write(MaplePacketCreator.enableActions());
-                        return;
-                    }*/
-                    chr.changeMap(to, to.getPortal(0));
-                } else {
-                    c.getSession().write(MTSCSPacket.useWheel((byte) (chr.getInventory(MapleInventoryType.CASH).countById(5510000) - 1)));
-                    chr.getStat().setHp(((chr.getStat().getMaxHp() / 100) * 40));
-                    MapleInventoryManipulator.removeById(c, MapleInventoryType.CASH, 5510000, 1, true, false);
-
-                    final MapleMap to = chr.getMap();
-                    chr.changeMap(to, to.getPortal(0));
-                }
+                LOGGER.info("Death return requested: characterId={}, mapId={}, bytes={}, changeType={}, targetId={}, portal={}, wheelRequested={}, wheel={}",
+                        chr.getId(), chr.getMapId(), packetLength, changeType, targetid, portalName, wheelRequested, wheel);
+                handleDeathReturn(c, chr, wheel);
             } else if (targetid != -1 && chr.isGM()) {
                 final MapleMap to = ChannelServer.getInstance(c.getChannel()).getMapFactory().getMap(targetid);
                 if (to != null && to.getPortal(0) != null) {

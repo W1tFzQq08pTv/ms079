@@ -62,10 +62,9 @@ public class MapleGuildRanking {
     private void reload() {
         ranks.clear();
 
-        Connection con = DatabaseConnection.getConnection();
-        ResultSet rs;
-        try (PreparedStatement ps = con.prepareStatement("SELECT * FROM guilds ORDER BY `GP` DESC LIMIT 50")) {
-            rs = ps.executeQuery();
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT * FROM guilds ORDER BY `GP` DESC LIMIT 50");
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 final GuildRankingInfo rank = new GuildRankingInfo(
                         rs.getString("name"),
@@ -78,7 +77,6 @@ public class MapleGuildRanking {
                 ranks.add(rank);
             }
 
-            rs.close();
         } catch (SQLException e) {
             LOGGER.error("家族排行错误" + e);
         }
@@ -86,10 +84,9 @@ public class MapleGuildRanking {
 
     private void showLevelRank() {
         ranks1.clear();
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("SELECT * FROM characters WHERE gm < 1 ORDER BY `level` DESC LIMIT 100");
-            ResultSet rs = ps.executeQuery();
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT * FROM characters WHERE gm < 1 ORDER BY `level` DESC LIMIT 100");
+             ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 final levelRankingInfo rank1 = new levelRankingInfo(
@@ -101,8 +98,6 @@ public class MapleGuildRanking {
                         rs.getInt("luk"));
                 ranks1.add(rank1);
             }
-            ps.close();
-            rs.close();
         } catch (SQLException e) {
             LOGGER.error("人物排行错误");
         }
@@ -111,10 +106,9 @@ public class MapleGuildRanking {
     private void showMesoRank() {
         ranks2.clear();
 
-        Connection con = DatabaseConnection.getConnection();
-        ResultSet rs;
-        try (PreparedStatement ps = con.prepareStatement("SELECT *, ( chr.meso + s.meso ) as money FROM `characters` as chr , `storages` as s WHERE chr.gm < 1  AND s.accountid = chr.accountid ORDER BY money DESC LIMIT 20")) {
-            rs = ps.executeQuery();
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT *, ( chr.meso + s.meso ) as money FROM `characters` as chr , `storages` as s WHERE chr.gm < 1  AND s.accountid = chr.accountid ORDER BY money DESC LIMIT 20");
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 final mesoRankingInfo rank2 = new mesoRankingInfo(
                         rs.getString("name"),
@@ -126,7 +120,6 @@ public class MapleGuildRanking {
                 ranks2.add(rank2);
             }
 
-            rs.close();
         } catch (SQLException e) {
             LOGGER.error("金币排行错误");
         }

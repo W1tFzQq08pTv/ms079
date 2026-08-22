@@ -1,13 +1,19 @@
 package server;
 
+import com.github.mrzhqiang.maplestory.domain.DCashShopModifiedItem;
+import com.github.mrzhqiang.maplestory.domain.query.QDCashShopModifiedItem;
 import com.github.mrzhqiang.maplestory.wz.WzData;
 import com.github.mrzhqiang.maplestory.wz.WzElement;
 import com.github.mrzhqiang.maplestory.wz.WzFile;
 import com.github.mrzhqiang.maplestory.wz.element.Elements;
+import database.DatabaseConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.CashItemInfo.CashModInfo;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,11 +22,9 @@ public class CashItemFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(CashItemFactory.class);
 
     private final static CashItemFactory instance = new CashItemFactory();
-    private final static int[] BEST_ITEMS = new int[]{50400041, 50400016, 50400135, 50400061, 20800204};
-    private static final int NO_OVERRIDE = -1;
-    private static final int NO_MARK = -2;
+    private final static int[] BEST_ITEMS = new int[]{50100010, 50100010, 50100010, 50100010, 50100010};
 
-    private final Map<Integer, List<CashItemInfo>> cashPackages = new HashMap<>();
+    private static final Map<Integer, List<CashItemInfo>> CASH_PACKAGES = new HashMap<>();
 
     private boolean initialized = false;
 
@@ -51,12 +55,9 @@ public class CashItemFactory {
         for (int i : itemids) {
             getPackageItems(i);
         }
-        // This private server intentionally exposes the complete v079 commodity catalog.
-        // A show-up-only override keeps the CS_OPEN packet below the legacy packet limit;
-        // all other fields continue to come from Commodity.img.
-        for (int sn : itemStats.keySet()) {
-            itemMods.put(sn, new CashModInfo(sn, 0, NO_MARK, true, 0, NO_OVERRIDE,
-                    false, 0, NO_OVERRIDE, 0, 0, 0, 0, 0, 0));
+        for (int i : itemStats.keySet()) {
+            getModInfo(i);
+            getItem(i); //init the modinfo's citem
         }
         initialized = true;
     }
@@ -98,40 +99,46 @@ public class CashItemFactory {
     /* public final List<CashItemInfo> getPackageItems(int itemId) {
          return itemPackage.get(itemId);
      }*/
-    public final List<CashItemInfo> getPackageItems(int itemId) {
-        List<CashItemInfo> list = cashPackages.get(itemId);
+    public static List<CashItemInfo> getPackageItems(int itemId) {
+        List<CashItemInfo> list = CASH_PACKAGES.get(itemId);
         if (list != null) {
             return list;
         }
 
-        List<Integer> packageSerialNumbers = getPackageSerialNumbers(itemId);
-        List<CashItemInfo> packageItems = packageSerialNumbers.stream()
-                // Package components are commonly not sold separately, so use raw commodity data.
-                .map(itemStats::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        if (packageItems.size() != packageSerialNumbers.size()) {
-            LOGGER.warn("Cash package {} has unresolved commodity serial numbers; purchase disabled", itemId);
-            packageItems = Collections.emptyList();
-        }
-        packageItems = Collections.unmodifiableList(packageItems);
-        cashPackages.put(itemId, packageItems);
-        return packageItems;
-    }
-
-    final List<Integer> getPackageSerialNumbers(int itemId) {
-        return WzData.ETC.directory()
+        List<CashItemInfo> packageItems = new ArrayList<>();
+        WzData.ETC.directory()
                 .findFile("CashPackage.img")
                 .map(WzFile::content)
                 .map(it -> it.find(String.valueOf(itemId)))
                 .map(WzElement::childrenStream)
                 .map(stream -> stream.flatMap(WzElement::childrenStream))
-                .map(stream -> stream.map(Elements::ofInt).collect(Collectors.toList()))
-                .orElse(Collections.emptyList());
+                .ifPresent(stream -> stream.forEach(element -> {
+                    // fixme 这一段代码有问题，需要看看要不要删除
+//                    Integer sn = ((IntElement) element).value();
+                    // packageItems.add(getItem(sn));
+                    CASH_PACKAGES.put(itemId, packageItems);
+                }));
+        CASH_PACKAGES.put(itemId, packageItems);
+        return packageItems;
     }
 
     public final CashModInfo getModInfo(int sn) {
-        return itemMods.get(sn);
+        CashModInfo ret = itemMods.get(sn);
+        //  LOGGER.debug(itemMods.toString());
+        if (ret == null) {
+            if (initialized) {
+                return null;
+            }
+            ret = new QDCashShopModifiedItem()
+                    .serial.eq(sn)
+                    .findOneOrEmpty()
+                    .map(item -> new CashModInfo(sn, item.discountPrice, item.mark, item.showup,
+                            item.itemid, item.priority, item.packageField, item.period, item.gender, item.count,
+                            item.meso, item.unk1, item.unk2, item.unk3, item.extraFlags))
+                    .orElse(null);
+            itemMods.put(sn, ret);
+        }
+        return ret;
     }
 
     public final Collection<CashModInfo> getAllModInfo() {
@@ -146,7 +153,8 @@ public class CashItemFactory {
     }
 
     public int getSnFromId(int itemId) {
-        return idLookup.get(itemId);
+        Integer sn = idLookup.get(itemId);
+        return sn == null ? 0 : sn;
     }
 
     public final void clearCashShop() {
@@ -154,7 +162,6 @@ public class CashItemFactory {
         itemPackage.clear();
         itemMods.clear();
         idLookup.clear();
-        cashPackages.clear();
         initialized = false;
         initialize();
     }
