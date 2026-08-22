@@ -249,33 +249,29 @@ public class CashShop implements Serializable {
 
     public List<Pair<IItem, String>> loadGifts() {
         List<Pair<IItem, String>> gifts = new ArrayList<Pair<IItem, String>>();
-        Connection con = DatabaseConnection.getConnection();
-        try {
-            PreparedStatement ps = con.prepareStatement("SELECT * FROM `gifts` WHERE `recipient` = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT * FROM `gifts` WHERE `recipient` = ?")) {
             ps.setInt(1, characterId);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                CashItemInfo cItem = CashItemFactory.getInstance().getItem(rs.getInt("sn"));
-                IItem item = toItem(cItem, rs.getInt("uniqueid"), rs.getString("from"));
-                gifts.add(new Pair<IItem, String>(item, rs.getString("message")));
-                uniqueids.add(item.getUniqueId());
-                List<CashItemInfo> packages = CashItemFactory.getInstance().getPackageItems(cItem.getId());
-                if (packages != null && packages.size() > 0) {
-                    for (CashItemInfo packageItem : packages) {
-                        addToInventory(toItem(packageItem, rs.getString("from")));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    CashItemInfo cItem = CashItemFactory.getInstance().getItem(rs.getInt("sn"));
+                    IItem item = toItem(cItem, rs.getInt("uniqueid"), rs.getString("from"));
+                    gifts.add(new Pair<IItem, String>(item, rs.getString("message")));
+                    uniqueids.add(item.getUniqueId());
+                    List<CashItemInfo> packages = CashItemFactory.getInstance().getPackageItems(cItem.getId());
+                    if (packages != null && packages.size() > 0) {
+                        for (CashItemInfo packageItem : packages) {
+                            addToInventory(toItem(packageItem, rs.getString("from")));
+                        }
+                    } else {
+                        addToInventory(item);
                     }
-                } else {
-                    addToInventory(item);
                 }
             }
-
-            rs.close();
-            ps.close();
-            ps = con.prepareStatement("DELETE FROM `gifts` WHERE `recipient` = ?");
-            ps.setInt(1, characterId);
-            ps.executeUpdate();
-            ps.close();
+            try (PreparedStatement delete = con.prepareStatement("DELETE FROM `gifts` WHERE `recipient` = ?")) {
+                delete.setInt(1, characterId);
+                delete.executeUpdate();
+            }
             save();
         } catch (SQLException sqle) {
             sqle.printStackTrace();

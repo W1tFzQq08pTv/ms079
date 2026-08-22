@@ -3770,21 +3770,18 @@ public class MTSCSPacket {
         mplew.writeShort(SendPacketOpcode.CS_OPERATION.getValue());
 
         mplew.write(70);
-        Connection con = DatabaseConnection.getConnection();
         int i = 10;
-        try {
-            PreparedStatement ps = con.prepareStatement("SELECT sn FROM wishlist WHERE characterid = ? LIMIT 10");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT sn FROM wishlist WHERE characterid = ? LIMIT 10")) {
             ps.setInt(1, chr.getAccountID());
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                mplew.writeInt(rs.getInt("sn"));
-                i--;
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    mplew.writeInt(rs.getInt("sn"));
+                    i--;
+                }
             }
-
-            rs.close();
-            ps.close();
         } catch (SQLException se) {
-            LOGGER.debug("Error getting wishlist data:" + se);
+            LOGGER.debug("Error getting wishlist data", se);
         }
 
         while (i > 0) {
