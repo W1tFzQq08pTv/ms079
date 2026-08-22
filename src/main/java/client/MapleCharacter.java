@@ -56,8 +56,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Serializable {
 
-    private static final int MAX_CASH_POINT_BALANCE = 999_999_999;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(MapleCharacter.class);
     private static final long MOVE_ITEM_COOLDOWN_MILLIS = 250L;
 
@@ -3407,7 +3405,8 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     }
 
     public void gainDY(int gain) {
-        modifyCSPoints(2, gain, false);
+        this.maplepoints += gain;
+        // setDY(getDY() + gain);
     }
 
     public void gainMeso(int gain, boolean show) {
@@ -4410,24 +4409,22 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
 
         switch (type) {
             case 1:
-                int updatedACash = calculateCashPointBalance(acash, quantity);
-                if (updatedACash == acash && quantity != 0) {
+                if (acash + quantity < 0) {
                     if (show) {
                         dropMessage(5, "你的点卷已经满了");
                     }
                     return;
                 }
-                acash = updatedACash;
+                acash += quantity;
                 break;
             case 2:
-                int updatedMaplePoints = calculateCashPointBalance(maplepoints, quantity);
-                if (updatedMaplePoints == maplepoints && quantity != 0) {
+                if (maplepoints + quantity < 0) {
                     if (show) {
                         dropMessage(5, "你的抵用卷已经满了.");
                     }
                     return;
                 }
-                maplepoints = updatedMaplePoints;
+                maplepoints += quantity;
                 break;
             default:
                 break;
@@ -4438,21 +4435,12 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         }
     }
 
-    static int calculateCashPointBalance(int current, int quantity) {
-        long updated = (long) current + quantity;
-        return updated < 0 || updated > MAX_CASH_POINT_BALANCE ? current : (int) updated;
-    }
-
-    static int clientSafeCashPointBalance(int balance) {
-        return Math.max(0, Math.min(MAX_CASH_POINT_BALANCE, balance));
-    }
-
     public int getCSPoints(int type) {
         switch (type) {
             case 1:
-                return clientSafeCashPointBalance(acash);
+                return acash;
             case 2:
-                return clientSafeCashPointBalance(maplepoints);
+                return maplepoints;
             default:
                 return 0;
         }
