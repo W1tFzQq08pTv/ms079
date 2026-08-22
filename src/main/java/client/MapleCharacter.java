@@ -231,8 +231,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         ret.stats.mp = 50;
         ret.prefix = 0;
 
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps;
             ps = con.prepareStatement("SELECT * FROM accounts WHERE id = ?");
             ps.setInt(1, ret.accountid);
@@ -4689,8 +4688,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
                 coolDowns.put(cooldown.skillId, cooldown);
             }
         } else {
-            try {
-                Connection con = DatabaseConnection.getConnection();
+            try (Connection con = DatabaseConnection.getConnection()) {
                 PreparedStatement ps = con.prepareStatement("SELECT SkillID,StartTime,length FROM skills_cooldowns WHERE charid = ?");
                 ps.setInt(1, getId());
                 ResultSet rs = ps.executeQuery();
@@ -4825,17 +4823,15 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     }
 
     public void showNote() {
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("SELECT * FROM notes WHERE `to`=?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT * FROM notes WHERE `to`=?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
             ps.setString(1, getName());
-            ResultSet rs = ps.executeQuery();
-            rs.last();
-            int count = rs.getRow();
-            rs.first();
-            client.getSession().write(MTSCSPacket.showNotes(rs, count));
-            rs.close();
-            ps.close();
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.last();
+                int count = rs.getRow();
+                rs.first();
+                client.getSession().write(MTSCSPacket.showNotes(rs, count));
+            }
         } catch (SQLException e) {
             LOGGER.error("Unable to show note" + e);
         }
@@ -6536,8 +6532,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
 
     public int getHyPay(int type) {
         int pay = 0;
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement("select * from hypay where accname = ?");
             ps.setString(1, getClient().getAccountName());
             ResultSet rs = ps.executeQuery();
@@ -6577,15 +6572,13 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         if (hypay <= 0) {
             return 0;
         }
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("UPDATE hypay SET pay = ? ,payUsed = ? ,payReward = ? where accname = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("UPDATE hypay SET pay = ? ,payUsed = ? ,payReward = ? where accname = ?")) {
             ps.setInt(1, pay + hypay);
             ps.setInt(2, payUsed);
             ps.setInt(3, payReward);
             ps.setString(4, getClient().getAccountName());
             ps.executeUpdate();
-            ps.close();
             return 1;
         } catch (SQLException ex) {
             LOGGER.error("加减充值信息发生错误: " + ex);
@@ -6600,15 +6593,13 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         if (hypay > pay) {
             return -1;
         }
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("UPDATE hypay SET pay = ? ,payUsed = ? ,payReward = ? where accname = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("UPDATE hypay SET pay = ? ,payUsed = ? ,payReward = ? where accname = ?")) {
             ps.setInt(1, pay - hypay);
             ps.setInt(2, payUsed + hypay);
             ps.setInt(3, payReward + hypay);
             ps.setString(4, getClient().getAccountName());
             ps.executeUpdate();
-            ps.close();
             return 1;
         } catch (SQLException ex) {
             LOGGER.error("加减充值信息发生错误: " + ex);
@@ -6624,13 +6615,11 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         if (pay > payReward) {
             return -1;
         }
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("UPDATE hypay SET payReward = ? where accname = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("UPDATE hypay SET payReward = ? where accname = ?")) {
             ps.setInt(1, payReward - pay);
             ps.setString(2, getClient().getAccountName());
             ps.executeUpdate();
-            ps.close();
             return 1;
         } catch (SQLException ex) {
             LOGGER.error("加减消费奖励信息发生错误: " + ex);
@@ -7860,8 +7849,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
 
     public int getFishingJF(int type) {
         int jf = 0;
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement("select * from fishingjf where accname = ?");
             ps.setString(1, getClient().getAccountName());
             ResultSet rs = ps.executeQuery();
@@ -7899,15 +7887,13 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         if (hypay <= 0) {
             return 0;
         }
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("UPDATE fishingjf SET fishing = ? ,XX = ? ,XXX = ? where accname = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("UPDATE fishingjf SET fishing = ? ,XX = ? ,XXX = ? where accname = ?")) {
             ps.setInt(1, hypay + jf);
             ps.setInt(2, XX);
             ps.setInt(3, XXX);
             ps.setString(4, getClient().getAccountName());
             ps.executeUpdate();
-            ps.close();
             return 1;
         } catch (SQLException ex) {
             LOGGER.error("加减钓鱼积分信息发生错误: " + ex);
@@ -7922,15 +7908,13 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         if (hypay > jf) {
             return -1;
         }
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("UPDATE fishingjf SET fishing = ? ,XX = ? ,XXX = ? where accname = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("UPDATE fishingjf SET fishing = ? ,XX = ? ,XXX = ? where accname = ?")) {
             ps.setInt(1, jf - hypay);
             ps.setInt(2, XX);
             ps.setInt(3, XXX);
             ps.setString(4, getClient().getAccountName());
             ps.executeUpdate();
-            ps.close();
             return 1;
         } catch (SQLException ex) {
             LOGGER.error("加减钓鱼积分信息发生错误: " + ex);
