@@ -161,8 +161,7 @@ public class MapleItemInformationProvider {
     }
 
     public void runItems() {
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
 
             // Load Item Data
             PreparedStatement ps = con.prepareStatement("SELECT * FROM wz_itemdata");
