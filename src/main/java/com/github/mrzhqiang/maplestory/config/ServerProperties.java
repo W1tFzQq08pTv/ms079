@@ -9,10 +9,8 @@ import com.google.inject.name.Named;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 /**
  * 服务器属性。
@@ -48,15 +46,6 @@ public final class ServerProperties {
     private final int worldFlags;
 
     private final int mallPort;
-    private final int cashShopCatalogLimit;
-    private final Set<Integer> cashShopCatalogSerials;
-    private final boolean cashShopPostOpenPackets;
-    private final boolean cashShopSendCashInventory;
-    private final boolean cashShopSendWishList;
-    private final boolean cashShopSendCashPoints;
-    private final boolean cashShopSendTouchingCashPoints;
-    private final boolean cashShopSendGifts;
-    private final boolean cashShopSendRefreshControls;
 
     private final boolean debug;
     private final boolean packetLogger;
@@ -98,24 +87,6 @@ public final class ServerProperties {
                 Math.max(1.0f, Numbers.ofFloat(properties.getProperty("server.world.mob-density-multiplier", "1.0"))));
         this.worldFlags = Numbers.ofInt(properties.getProperty("server.world.flags", "0"));
         this.mallPort = Numbers.ofInt(properties.getProperty("server.mall.port", "8600"));
-        this.cashShopCatalogLimit = Math.min(Short.MAX_VALUE,
-                Math.max(0, Numbers.ofInt(properties.getProperty("server.mall.catalog.limit", "512"))));
-        this.cashShopCatalogSerials = catalogSerials(
-                properties.getProperty("server.mall.catalog.serials", ""));
-        this.cashShopPostOpenPackets = Boolean.parseBoolean(
-                properties.getProperty("server.mall.post-open-packets", "true"));
-        this.cashShopSendCashInventory = Boolean.parseBoolean(
-                properties.getProperty("server.mall.send-cash-inventory", "true"));
-        this.cashShopSendWishList = Boolean.parseBoolean(
-                properties.getProperty("server.mall.send-wish-list", "true"));
-        this.cashShopSendCashPoints = Boolean.parseBoolean(
-                properties.getProperty("server.mall.send-cash-points", "true"));
-        this.cashShopSendTouchingCashPoints = Boolean.parseBoolean(
-                properties.getProperty("server.mall.send-touching-cash-points", "true"));
-        this.cashShopSendGifts = Boolean.parseBoolean(
-                properties.getProperty("server.mall.send-gifts", "true"));
-        this.cashShopSendRefreshControls = Boolean.parseBoolean(
-                properties.getProperty("server.mall.send-refresh-controls", "true"));
         this.debug = Boolean.parseBoolean(properties.getProperty("server.debug.enabled", "false"));
         this.packetLogger = Boolean.parseBoolean(properties.getProperty("server.logger.packet", "false"));
         this.packetDebugLogger = Boolean.parseBoolean(properties.getProperty("server.logger.packet.debug", "false"));
@@ -210,56 +181,6 @@ public final class ServerProperties {
 
     public int getMallPort() {
         return mallPort;
-    }
-
-    public int getCashShopCatalogLimit() {
-        return cashShopCatalogLimit;
-    }
-
-    public Set<Integer> getCashShopCatalogSerials() {
-        return cashShopCatalogSerials;
-    }
-
-    public boolean isCashShopPostOpenPackets() {
-        return cashShopPostOpenPackets;
-    }
-
-    public boolean isCashShopSendCashInventory() {
-        return cashShopSendCashInventory;
-    }
-
-    public boolean isCashShopSendWishList() {
-        return cashShopSendWishList;
-    }
-
-    public boolean isCashShopSendCashPoints() {
-        return cashShopSendCashPoints;
-    }
-
-    public boolean isCashShopSendTouchingCashPoints() {
-        return cashShopSendTouchingCashPoints;
-    }
-
-    public boolean isCashShopSendGifts() {
-        return cashShopSendGifts;
-    }
-
-    public boolean isCashShopSendRefreshControls() {
-        return cashShopSendRefreshControls;
-    }
-
-    private static Set<Integer> catalogSerials(String values) {
-        if (values.trim().isEmpty()) {
-            return Collections.emptySet();
-        }
-        Set<Integer> serials = new LinkedHashSet<Integer>();
-        for (String value : values.split(",")) {
-            int serial = Numbers.ofInt(value.trim());
-            if (serial > 0) {
-                serials.add(serial);
-            }
-        }
-        return Collections.unmodifiableSet(serials);
     }
 
     public String getAddress() {
