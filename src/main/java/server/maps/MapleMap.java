@@ -428,7 +428,7 @@ public final class MapleMap {
             int part3 = chr.getDropMod();
             int part4 = (int) (chr.getStat().dropBuff / 100.0);
             int part5 = (int) (showdown / 100.0);
-            int last = part1 * part2 * part3 * part4 * part5;
+            long last = (long) part1 * part2 * part3 * part4 * part5;
             if (Rand < last) {
                 if (droptype == 3) {
                     pos = Vector.of((mobpos + (d % 2 == 0 ? (40 * (d + 1) / 2) : -(40 * (d / 2)))), pos.y);
