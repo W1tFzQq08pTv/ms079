@@ -31,6 +31,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 import client.inventory.IItem;
 import constants.GameConstants;
 import client.inventory.MaplePet;
@@ -175,21 +176,14 @@ public class CashShop implements Serializable {
         if (uniqueid <= 0) {
             uniqueid = MapleInventoryIdentifier.getInstance();
         }
-        long period = cItem.getPeriod();
-        if (GameConstants.isPet(cItem.getId())) {
-            period = 90;
-        } else if (cItem.getId() >= 5210000 && cItem.getId() <= 5360099 && cItem.getId() != 5220007 && cItem.getId() != 5220008) {
-        } else {
-            period = 0;
-        }
+        long duration = cashItemDurationMillis(cItem);
         IItem ret = null;
         if (GameConstants.getInventoryType(cItem.getId()) == MapleInventoryType.EQUIP) {
             Equip eq = (Equip) MapleItemInformationProvider.getInstance().getEquipById(cItem.getId());
             eq.setUniqueId(uniqueid);
-            if (GameConstants.isPet(cItem.getId()) || period > 0) {
-                eq.setExpiration((long) (System.currentTimeMillis() + (long) (period * 24 * 60 * 60 * 1000)));
+            if (duration > 0) {
+                eq.setExpiration(System.currentTimeMillis() + duration);
             }
-            // eq.setExpiration((long) (System.currentTimeMillis() + (long) (period * 24 * 60 * 60 * 1000)));
             eq.setGiftFrom(gift);
             if (GameConstants.isEffectRing(cItem.getId()) && uniqueid > 0) {
                 MapleRing ring = MapleRing.loadFromDb(uniqueid);
@@ -200,14 +194,9 @@ public class CashShop implements Serializable {
             ret = eq.copy();
         } else {
             Item item = new Item(cItem.getId(), (byte) 0, (short) cItem.getCount(), (byte) 0, uniqueid);
-            if (period > 0) {
-                item.setExpiration((long) (System.currentTimeMillis() + (long) (period * 24 * 60 * 60 * 1000)));
+            if (duration > 0) {
+                item.setExpiration(System.currentTimeMillis() + duration);
             }
-            if (cItem.getId() == 5211047 || cItem.getId() == 5360014) {
-                item.setExpiration((long) (System.currentTimeMillis() + (long) (3 * 60 * 60 * 1000)));
-            }
-            //  LOGGER.debug(new Date(System.currentTimeMillis() + (long) (3 * 60 * 60 * 1000)));
-            //item.setExpiration((long) (System.currentTimeMillis() + (long) (period * 24 * 60 * 60 * 1000)));
             item.setGiftFrom(gift);
             if (GameConstants.isPet(cItem.getId())) {
                 final MaplePet pet = MaplePet.createPet(cItem.getId(), uniqueid);
@@ -218,6 +207,19 @@ public class CashShop implements Serializable {
             ret = item.copy();
         }
         return ret;
+    }
+
+    static long cashItemDurationMillis(CashItemInfo cItem) {
+        if (cItem.getId() == 5211047 || cItem.getId() == 5360014) {
+            return TimeUnit.HOURS.toMillis(3);
+        }
+        if (cItem.getPeriod() > 0) {
+            return TimeUnit.DAYS.toMillis(cItem.getPeriod());
+        }
+        if (GameConstants.isPet(cItem.getId())) {
+            return TimeUnit.DAYS.toMillis(90);
+        }
+        return 0;
     }
 
     public void addToInventory(IItem item) {
