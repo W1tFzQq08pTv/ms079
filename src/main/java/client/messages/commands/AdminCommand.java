@@ -2352,7 +2352,7 @@ public class AdminCommand {
                 } else {
                     c.getChannelServer().setDropRate(rate);
                 }
-                c.getPlayer().dropMessage(6, "掉宝倍率已改变更为 " + rate + "x");
+                c.getPlayer().dropMessage(6, "稀有掉宝倍率已改变为 " + rate + "x");
             } else {
                 return 0;
             }
@@ -2360,7 +2360,7 @@ public class AdminCommand {
         }
 
         public String getMessage() {
-            return new StringBuilder().append("!droprate <倍率> - 更改掉落倍率").toString();
+            return new StringBuilder().append("!droprate <倍率> - 更改稀有掉落倍率").toString();
 
         }
     }

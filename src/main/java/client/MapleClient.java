@@ -204,7 +204,8 @@ public class MapleClient implements Serializable {
             return false;
         }
         boolean ret = false;
-        try (PreparedStatement ps = DatabaseConnection.getConnection().prepareStatement("SELECT COUNT(*) FROM macbans WHERE mac = ?")) {
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM macbans WHERE mac = ?")) {
             ps.setString(1, mac);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
@@ -212,7 +213,6 @@ public class MapleClient implements Serializable {
                     ret = true;
                 }
             }
-            ps.close();
         } catch (SQLException ex) {
             LOGGER.error("Error checking mac bans" + ex);
         }
@@ -221,8 +221,8 @@ public class MapleClient implements Serializable {
 
     public boolean isBannedIP(String ip) {
         boolean ret = false;
-        Connection con = DatabaseConnection.getConnection();
-        try (PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM ipbans WHERE ? LIKE CONCAT(ip, '%')")) {
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM ipbans WHERE ? LIKE CONCAT(ip, '%')")) {
             ps.setString(1, ip);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
@@ -238,17 +238,15 @@ public class MapleClient implements Serializable {
 
     public boolean hasBannedIP() {
         boolean ret = false;
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM ipbans WHERE ? LIKE CONCAT(ip, '%')");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM ipbans WHERE ? LIKE CONCAT(ip, '%')")) {
             ps.setString(1, session.getRemoteAddress().toString());
-            ResultSet rs = ps.executeQuery();
-            rs.next();
-            if (rs.getInt(1) > 0) {
-                ret = true;
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                if (rs.getInt(1) > 0) {
+                    ret = true;
+                }
             }
-            rs.close();
-            ps.close();
         } catch (SQLException ex) {
             LOGGER.error("Error checking ip bans" + ex);
         }
@@ -261,29 +259,27 @@ public class MapleClient implements Serializable {
         }
         boolean ret = false;
         int i = 0;
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM macbans WHERE mac IN (");
-            for (i = 0; i < macs.size(); i++) {
-                sql.append("?");
-                if (i != macs.size() - 1) {
-                    sql.append(", ");
-                }
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM macbans WHERE mac IN (");
+        for (i = 0; i < macs.size(); i++) {
+            sql.append("?");
+            if (i != macs.size() - 1) {
+                sql.append(", ");
             }
-            sql.append(")");
-            PreparedStatement ps = con.prepareStatement(sql.toString());
+        }
+        sql.append(")");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql.toString())) {
             i = 0;
             for (String mac : macs) {
                 i++;
                 ps.setString(i, mac);
             }
-            ResultSet rs = ps.executeQuery();
-            rs.next();
-            if (rs.getInt(1) > 0) {
-                ret = true;
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                if (rs.getInt(1) > 0) {
+                    ret = true;
+                }
             }
-            rs.close();
-            ps.close();
         } catch (SQLException ex) {
             LOGGER.error("Error checking mac bans" + ex);
         }
@@ -292,26 +288,24 @@ public class MapleClient implements Serializable {
 
     private void loadMacsIfNescessary() throws SQLException {
         if (macs.isEmpty()) {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("SELECT macs FROM accounts WHERE id = ?");
-            ps.setInt(1, accId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                if (rs.getString("macs") != null) {
-                    String[] macData = rs.getString("macs").split(", ");
-                    for (String mac : macData) {
-                        if (!mac.equals("")) {
-                            macs.add(mac);
+            try (Connection con = DatabaseConnection.getConnection();
+                 PreparedStatement ps = con.prepareStatement("SELECT macs FROM accounts WHERE id = ?")) {
+                ps.setInt(1, accId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        if (rs.getString("macs") != null) {
+                            String[] macData = rs.getString("macs").split(", ");
+                            for (String mac : macData) {
+                                if (!mac.equals("")) {
+                                    macs.add(mac);
+                                }
+                            }
                         }
+                    } else {
+                        throw new RuntimeException("No valid account associated with this client.");
                     }
                 }
-            } else {
-                rs.close();
-                ps.close();
-                throw new RuntimeException("No valid account associated with this client.");
             }
-            rs.close();
-            ps.close();
         }
     }
 
@@ -425,8 +419,7 @@ public class MapleClient implements Serializable {
 
     public int fblogin(String login, String pwd, boolean ipMacBanned) {
         int loginok = 5;
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement("SELECT * FROM accounts WHERE facebook_id = ?");
             ps.setString(1, login);
             ResultSet rs = ps.executeQuery();
@@ -505,8 +498,7 @@ public class MapleClient implements Serializable {
 
     public int login(String login, String pwd, boolean ipMacBanned) {
         int loginok = 5;
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement("SELECT * FROM accounts WHERE name = ?");
             ps.setString(1, login);
             ResultSet rs = ps.executeQuery();
@@ -1421,13 +1413,11 @@ public class MapleClient implements Serializable {
         if (macData.equalsIgnoreCase("00-00-00-00-00-00") || macData.length() != 17) {
             return;
         }
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            try (PreparedStatement ps = con.prepareStatement("UPDATE accounts SET macs = ? WHERE id = ?")) {
-                ps.setString(1, macData);
-                ps.setInt(2, accId);
-                ps.executeUpdate();
-            }
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET macs = ? WHERE id = ?")) {
+            ps.setString(1, macData);
+            ps.setInt(2, accId);
+            ps.executeUpdate();
         } catch (SQLException e) {
             LOGGER.error("Error saving MACs" + e);
         }
@@ -1435,33 +1425,19 @@ public class MapleClient implements Serializable {
     }
 
     public void loadAccountData(int accountID) {
-        Connection con = DatabaseConnection.getConnection();
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        try {
-            ps = con.prepareStatement("SELECT macs, id, 2ndpassword, gm, tempban, gender FROM accounts WHERE id = ?");
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT macs, id, 2ndpassword, gm, tempban, gender FROM accounts WHERE id = ?")) {
             ps.setInt(1, accountID);
-            rs = ps.executeQuery();
-            if (rs.next()) {
-                mac = rs.getString("macs");
-                secondPassword = rs.getString("2ndpassword");
-                gm = rs.getInt("gm") > 0;
-                tempban = getTempBanCalendar(rs);
-                gender = rs.getByte("gender");
-                ps.close();
-                rs.close();
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    mac = rs.getString("macs");
+                    secondPassword = rs.getString("2ndpassword");
+                    gm = rs.getInt("gm") > 0;
+                    tempban = getTempBanCalendar(rs);
+                    gender = rs.getByte("gender");
+                }
             }
         } catch (SQLException e) {
-        } finally {
-            try {
-                if (ps != null && !ps.isClosed()) {
-                    ps.close();
-                }
-                if (rs != null && !rs.isClosed()) {
-                    rs.close();
-                }
-            } catch (SQLException e) {
-            }
         }
     }
 }

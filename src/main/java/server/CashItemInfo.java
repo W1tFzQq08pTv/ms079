@@ -133,7 +133,7 @@ public class CashItemInfo {
             if (this.showUp) {
                 this.flags |= 0x400;
             }
-            if (this.mark >= -1 && this.mark <= 3) {
+            if (this.mark >= -1 || this.mark <= 3) {
                 this.flags |= 0x800;
             }
             if (this.unk_3 > 0) {

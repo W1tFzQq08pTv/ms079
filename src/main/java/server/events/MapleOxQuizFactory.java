@@ -66,8 +66,7 @@ public class MapleOxQuizFactory {
         if (initialized) {
             return;
         }
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement("SELECT * FROM wz_oxdata");
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -85,8 +84,7 @@ public class MapleOxQuizFactory {
 
     public MapleOxQuizEntry getFromSQL(String sql) {
         MapleOxQuizEntry ret = null;
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {

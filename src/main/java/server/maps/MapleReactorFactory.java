@@ -25,7 +25,7 @@ public final class MapleReactorFactory {
         String name = Strings.padStart(String.valueOf(rid), 7, '0');
         int infoId = WzData.REACTOR.directory().findFile(name)
                 .map(WzFile::content)
-                .map(element -> Elements.findInt(element, "info/link"))
+                .map(element -> Elements.findInt(element, "info/link", rid))
                 .orElse(rid);
 
         stats = REACTOR_STATS_CACHED.get(infoId);

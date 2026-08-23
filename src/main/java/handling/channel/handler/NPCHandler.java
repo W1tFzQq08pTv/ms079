@@ -130,7 +130,7 @@ public class NPCHandler {
                 }
                 final byte slot = (byte) slea.readShort();
                 final int itemId = slea.readInt();
-                final short quantity = slea.readShort();
+                final int quantity = normalizeSellQuantity(slea.readShort());
                 shop.sell(c, GameConstants.getInventoryType(itemId), slot, quantity);
                 break;
             }
@@ -147,6 +147,11 @@ public class NPCHandler {
                 chr.setConversation(0);
                 break;
         }
+    }
+
+    static int normalizeSellQuantity(short encodedQuantity) {
+        final int quantity = Short.toUnsignedInt(encodedQuantity);
+        return quantity == 0 || quantity == 0xFFFF ? 1 : quantity;
     }
 
     public static void NPCTalk(final SeekableLittleEndianAccessor slea, final MapleClient c, final MapleCharacter chr) {

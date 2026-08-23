@@ -170,15 +170,12 @@ public class World {
         private static final AtomicInteger RUNNING_PARTY_ID = new AtomicInteger();
 
         public static void init() {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps;
-            try {
-                ps = con.prepareStatement("SELECT MAX(party)+2 FROM characters");
+            try (Connection con = DatabaseConnection.getConnection();
+                 PreparedStatement ps = con.prepareStatement("SELECT MAX(party)+2 FROM characters")) {
                 ResultSet rs = ps.executeQuery();
                 rs.next();
                 RUNNING_PARTY_ID.set(rs.getInt(1));
                 rs.close();
-                ps.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }

@@ -169,7 +169,19 @@ public class InterServerHandler {
         c.updateLoginState(MapleClient.LOGIN_LOGGEDIN, c.getSessionIPAddress());
         // c.updateLoginState(MapleClient.LOGIN_SERVER_TRANSITION, c.getSessionIPAddress());
         channelServer.addPlayer(player);
-        c.getSession().write(MaplePacketCreator.getCharInfo(player));
+        final MaplePacket characterInfo;
+        try {
+            characterInfo = MaplePacketCreator.getCharInfo(player);
+        } catch (RuntimeException e) {
+            LOGGER.error("Character login packet preparation failed: characterId={}, accountId={}, channel={}",
+                    player.getId(), player.getAccountID(), c.getChannel(), e);
+            c.setPlayer(null);
+            c.getSession().close(true);
+            return;
+        }
+        LOGGER.info("Character login packet prepared: characterId={}, accountId={}, channel={}, bytes={}",
+                player.getId(), player.getAccountID(), c.getChannel(), characterInfo.getBytes().length);
+        c.getSession().write(characterInfo);
         // Keep staff visible by default so they can receive monster control and
         // play normally. Staff can still opt into hide mode with the hide command.
         c.getSession().write(MaplePacketCreator.temporaryStats_Reset()); // .

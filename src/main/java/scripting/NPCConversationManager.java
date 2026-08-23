@@ -1544,6 +1544,7 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
                     }
                     if (num == 0) {
                         name.append("当前怪物 #o").append(mobId).append("# 的爆率为:\r\n");
+                        name.append("稀有倍率仅作用于基础概率不高于1%的非任务物品，每只怪最多1件。\r\n");
                         name.append("--------------------------------------\r\n");
                     }
                     String namez = new StringBuilder().append("#z").append(itemId).append("#").toString();
@@ -1551,7 +1552,7 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
                         itemId = 4031041;
                         namez = new StringBuilder().append(de.Minimum * getClient().getChannelServer().getMesoRate()).append(" - ").append(de.Maximum * getClient().getChannelServer().getMesoRate()).append(" 的金币").toString();
                     }
-                    ch = de.chance * rate;
+                    ch = (int) MonsterDropPolicy.effectiveChance(de, rate, 1);
                     //  if (getPlayer().isAdmin()) {
                     name.append(num + 1).append(") #v").append(itemId).append("#").append(namez).append(" - ").append(Integer.valueOf(ch >= 999999 ? 1000000 : ch).doubleValue() / 10000.0D).append("%的爆率. ").append((de.questid > 0) && (MapleQuest.getInstance(de.questid).getName().length() > 0) ? new StringBuilder().append("需要接受任务: ").append(MapleQuest.getInstance(de.questid).getName()).toString() : "").append("\r\n");
                     // } else {

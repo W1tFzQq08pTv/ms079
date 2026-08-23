@@ -208,25 +208,25 @@ public class BuddyList implements Serializable {
      */
     public void loadFromDb(int characterId) throws SQLException {
 
-        Connection con = DatabaseConnection.getConnection();
-        PreparedStatement ps = con.prepareStatement("SELECT b.buddyid, b.pending, c.name as buddyname, c.job as buddyjob, c.level as buddylevel, b.groupname FROM buddies as b, characters as c WHERE c.id = b.buddyid AND b.characterid = ?");
-        ps.setInt(1, characterId);
-        ResultSet rs = ps.executeQuery();
-        while (rs.next()) {
-            int buddyid = rs.getInt("buddyid");
-            String buddyname = rs.getString("buddyname");
-            if (rs.getInt("pending") == 1) {
-                pendingReqs.push(new BuddyEntry(buddyname, buddyid, rs.getString("groupname"), -1, false, rs.getInt("buddylevel"), rs.getInt("buddyjob")));
-            } else {
-                put(new BuddyEntry(buddyname, buddyid, rs.getString("groupname"), -1, true, rs.getInt("buddylevel"), rs.getInt("buddyjob")));
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT b.buddyid, b.pending, c.name as buddyname, c.job as buddyjob, c.level as buddylevel, b.groupname FROM buddies as b, characters as c WHERE c.id = b.buddyid AND b.characterid = ?")) {
+            ps.setInt(1, characterId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int buddyid = rs.getInt("buddyid");
+                    String buddyname = rs.getString("buddyname");
+                    if (rs.getInt("pending") == 1) {
+                        pendingReqs.push(new BuddyEntry(buddyname, buddyid, rs.getString("groupname"), -1, false, rs.getInt("buddylevel"), rs.getInt("buddyjob")));
+                    } else {
+                        put(new BuddyEntry(buddyname, buddyid, rs.getString("groupname"), -1, true, rs.getInt("buddylevel"), rs.getInt("buddyjob")));
+                    }
+                }
+            }
+            try (PreparedStatement delete = con.prepareStatement("DELETE FROM buddies WHERE pending = 1 AND characterid = ?")) {
+                delete.setInt(1, characterId);
+                delete.executeUpdate();
             }
         }
-        rs.close();
-        ps.close();
-        ps = con.prepareStatement("DELETE FROM buddies WHERE pending = 1 AND characterid = ?");
-        ps.setInt(1, characterId);
-        ps.executeUpdate();
-        ps.close();
     }
 
     /**

@@ -51,7 +51,9 @@ public enum CheatingOffense {
     金钱炸弹_不存在道具((byte) 1, 300000),//EXPLODING_NONEXISTANT
     召唤兽攻击怪物数量异常((byte) 1, 10000, 3),//SUMMON_HACK_MOBS
     治愈术攻击非不死系怪物((byte) 20, 10000, 3),//HEAL_ATTACKING_UNDEAD
-    吸怪((byte) 1, 7000, 5);
+    // Monster movement packets can legitimately exceed the distance heuristic in MobHandler.
+    // Keep the dedicated movement log there, but never auto-ban from this signal alone.
+    吸怪((byte) 1, 7000, 5, (byte) 0);
     private final byte points;
     private final long validityDuration;
     private final int autobancount;

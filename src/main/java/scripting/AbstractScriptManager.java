@@ -77,22 +77,23 @@ public abstract class AbstractScriptManager {
                 }
                 engine = createScriptEngine();
 
-                if (c != null) {
-                    c.setScriptEngine(path, engine);
-                }
                 fr = new FileInputStream(scriptFile);
                 BufferedReader bf = new BufferedReader(new InputStreamReader(fr, EncodingDetect.getJavaEncode(scriptFile)));
 
                 engine.eval(bf);
+                if (c != null) {
+                    c.setScriptEngine(path, engine);
+                }
             } else if (c != null && npc) {
                 NPCScriptManager.getInstance().dispose(c);
                 c.getSession().write(MaplePacketCreator.enableActions());
                 //c.getPlayer().dropMessage(5, "你现在已经假死请使用@ea");
             }
             return (Invocable) engine;
-        } catch (Exception e) {
-            LOGGER.error("Error executing script. Path: " + path + "\nException " + e);
-            FileoutputUtil.log(FileoutputUtil.ScriptEx_Log, "Error executing script. Path: " + path + "\nException " + e);
+        } catch (Exception | AssertionError e) {
+            LOGGER.error("Error executing script. Path: " + path, e);
+            FileoutputUtil.log(FileoutputUtil.ScriptEx_Log, "Error executing script. Path: " + path);
+            FileoutputUtil.outputFileError(FileoutputUtil.ScriptEx_Log, e);
             return null;
         } finally {
             try {

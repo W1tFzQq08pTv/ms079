@@ -2416,11 +2416,20 @@ public class MaplePacketCreator {
         }
         mplew.writeShort(0); // delay,  wk charges have 600 here o.o
         mplew.writeShort(0); // combo 600, too
-        if (effect == null || (!effect.isCombo() && !effect.isFinalAttack())) {
+        if (!usesCompactBuffTail(statups, effect)) {
             mplew.write(0); // Test
         }
 
         return mplew.getPacket();
+    }
+
+    static boolean usesCompactBuffTail(List<Pair<MapleBuffStat, Integer>> statups, MapleStatEffect effect) {
+        for (Pair<MapleBuffStat, Integer> statup : statups) {
+            if (statup.getLeft() == MapleBuffStat.COMBO || statup.getLeft() == MapleBuffStat.FINALATTACK) {
+                return true;
+            }
+        }
+        return effect != null && (effect.isCombo() || effect.isFinalAttack());
     }
 
     /* public static MaplePacket giveDebuff(long mask, List<Pair<MapleDisease, Integer>> statups, MobSkill skill, int duration) {

@@ -46,8 +46,7 @@ public final class MapleGuild implements java.io.Serializable {
     private boolean init = false;
 
     public MapleGuild(int guildid) {
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement("SELECT * FROM guilds WHERE guildid = ?", ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
             ps.setInt(1, guildid);
             ResultSet rs = ps.executeQuery();
@@ -138,8 +137,7 @@ public final class MapleGuild implements java.io.Serializable {
     public static Collection<MapleGuild> loadAll() {
         final Collection<MapleGuild> ret = new ArrayList<>();
         MapleGuild g;
-        try {
-            Connection con = DatabaseConnection.getConnection();
+        try (Connection con = DatabaseConnection.getConnection()) {
             PreparedStatement ps = con.prepareStatement("SELECT guildid FROM guilds");
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {

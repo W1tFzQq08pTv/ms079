@@ -1659,7 +1659,7 @@ public class MapleMonster extends AbstractLoadedMapleLife {
             Collections.shuffle(dropEntry);
             IItem idrop;
             for (MonsterDropEntry d : dropEntry) {
-                if (d.itemId > 0 && d.questid == 0 && d.itemId / 10000 != 238 && Randomizer.nextInt(999999) < (int) (10 * d.chance * chServerrate * chr.getDropMod() * (chr.getStat().dropBuff / 100.0) * (showdown / 100.0))) { //kinda op
+                if (d.itemId > 0 && d.questid == 0 && d.itemId / 10000 != 238 && Randomizer.nextInt(999999) < (int) (10L * d.chance * chServerrate * chr.getDropMod() * (chr.getStat().dropBuff / 100.0) * (showdown / 100.0))) { //kinda op
                     if (GameConstants.getInventoryType(d.itemId) == MapleInventoryType.EQUIP) {
                         Equip eq = (Equip) MapleItemInformationProvider.getInstance().getEquipById(d.itemId);
                         idrop = MapleItemInformationProvider.getInstance().randomizeStats(eq);
