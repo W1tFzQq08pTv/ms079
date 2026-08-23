@@ -71,6 +71,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
             currentrep, totalrep, coconutteam = 0, followid = 0, battleshipHP = 0,
             expression, constellation, blood, month, day, beans, beansNum, beansRange, prefix;
     private boolean canSetBeansNum;
+    private transient Set<Integer> synchronizedPetFlags = new HashSet<Integer>();
     private Vector old = Vector.empty();
     private boolean smega, hidden, hasSummon = false;
     private int[] wishlist, rocks, savedLocations, regrocks, remainingSp = new int[10];
@@ -4045,6 +4046,9 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         getClient().getSession().write(PetPacket.petStatUpdate(this));
          */
         pet.setSummoned(0);
+        if (synchronizedPetFlags != null) {
+            synchronizedPetFlags.remove(pet.getUniqueId());
+        }
         /*
          * int slot = -1; for (int i = 0; i < 3; i++) { if (pets[i] != null) {
          * if (pets[i].getUniqueId() == pet.getUniqueId()) { pets[i] = null;
@@ -5624,6 +5628,22 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         client.getSession().write(PetPacket.emptyStatUpdate());
     }
 
+    public void syncPetFlagsAfterMapReady() {
+        if (synchronizedPetFlags == null) {
+            synchronizedPetFlags = new HashSet<Integer>();
+        }
+        for (MaplePet pet : getPets()) {
+            if (pet.getSummoned() && synchronizedPetFlags.add(pet.getUniqueId())) {
+                for (MaplePet.PetFlag flag : MaplePet.PetFlag.values()) {
+                    if (flag.isSupportedByClient() && flag.check(pet.getClientFlags())) {
+                        client.getSession().write(MTSCSPacket.changePetFlag(
+                                pet.getUniqueId(), true, flag.getValue()));
+                    }
+                }
+            }
+        }
+    }
+
     public void addMoveMob(int mobid) {
         if (movedMobs.containsKey(mobid)) {
             movedMobs.put(mobid, movedMobs.get(mobid) + 1);
@@ -5806,7 +5826,7 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
     public final void spawnSavedPets() {
         for (int i = 0; i < petStore.length; i++) {
             if (petStore[i] > -1) {
-                spawnPet(petStore[i], false, false);
+                spawnPet(petStore[i], false, true);
             }
         }
         client.getSession().write(PetPacket.petStatUpdate(this));
@@ -7020,14 +7040,14 @@ public class MapleCharacter extends AbstractAnimatedMapleMapObject implements Se
         return Integer.parseInt(stat.getCustomData());
     }
 
-    /* public void updatePetEquip() {
+    public void updatePetEquip() {
         if (getIntNoRecord(122221) > 0) {
             client.getSession().write(MaplePacketCreator.petAutoHP(getIntRecord(122221)));
         }
         if (getIntNoRecord(122222) > 0) {
             client.getSession().write(MaplePacketCreator.petAutoMP(getIntRecord(122222)));
         }
-    }*/
+    }
     public void spawnBomb() {
         final MapleMonster bomb = MapleLifeFactory.getMonster(9300166);
         bomb.changeLevel(250, true);

@@ -1113,6 +1113,7 @@ public class PlayerHandler {
         if (chr == null) {
             return;
         }
+        chr.syncPetFlagsAfterMapReady();
         final Vector Original_Pos = chr.getPosition(); // 4 bytes Added on v.80 MSEA
         slea.skip(33);
 

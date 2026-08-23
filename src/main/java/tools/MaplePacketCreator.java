@@ -1998,7 +1998,7 @@ public class MaplePacketCreator {
                 mplew.write(pet.getLevel()); // pet level
                 mplew.writeShort(pet.getCloseness()); // pet closeness
                 mplew.write(pet.getFullness()); // pet fullness
-                mplew.writeShort(pet.getFlags());
+                mplew.writeShort(pet.getClientFlags());
                 mplew.writeInt(peteqid);
             }
         }

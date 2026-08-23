@@ -640,12 +640,9 @@ public class PacketHelper {
         } else {
             PacketHelper.addExpirationTime(mplew, item.getExpiration() <= System.currentTimeMillis() ? -1 : item.getExpiration());
         }
-        mplew.writeShort(0);
-        mplew.writeShort(pet.getFlags());
-        mplew.writeInt(pet.getPetItemId() == 5000054 && pet.getSecondsLeft() > 0 ? pet.getSecondsLeft() : 0); //in seconds, 3600 = 1 hr.
-        //mplew.writeShort(0);
-        mplew.write(0);
-        mplew.write(active ? pet.getSummoned() ? pet.getSummonedValue() : 0 : 0);//显示装备栏上宠物的位置
+        // This client aborts if persisted flags are embedded in the character
+        // inventory entry. Pet flags are synchronized after the pet is spawned.
+        mplew.writeZeroBytes(10);
         /*
          * for (int i = 0; i < 4; i++) { mplew.write(0); //0x40 before, changed
          * to 0? }

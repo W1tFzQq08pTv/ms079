@@ -282,9 +282,9 @@ public class InterServerHandler {
         player.receivePartyMemberHP();//收到队伍里面队员的血条
         player.updatePartyMemberHP();//更新队伍里面队员的HP
         player.startFairySchedule(false);
-        //player.updatePetEquip();
         player.baseSkills(); //fix people who've lost skills.
         c.getSession().write(MaplePacketCreator.getKeymap(player.getKeyLayout()));
+        player.updatePetEquip();
 
         for (MapleQuestStatus status : player.getStartedQuests()) {
             if (status.hasMobKills()) {
