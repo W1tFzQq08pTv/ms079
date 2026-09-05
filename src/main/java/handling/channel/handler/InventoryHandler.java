@@ -2244,12 +2244,18 @@ public class InventoryHandler {
                     }
                 }
                 PetFlag zz = PetFlag.getByAddId(itemId);
-                if (zz != null && !zz.check(pet.getFlags())) {
+                if (zz != null && !zz.isSupportedByClient()) {
+                    c.getPlayer().dropMessage(5, "当前客户端版本不支持此宠物能力，道具未消耗。");
+                } else if (zz != null && !zz.check(pet.getFlags())) {
                     pet.setFlags(pet.getFlags() | zz.getValue());
                     c.getSession().write(PetPacket.updatePet(pet, c.getPlayer().getInventory(MapleInventoryType.CASH).getItem((byte) pet.getInventoryPosition()), true));
+                    c.getSession().write(PetPacket.petStatUpdate(c.getPlayer()));
                     c.getSession().write(MaplePacketCreator.enableActions());
                     c.getSession().write(MTSCSPacket.changePetFlag(uniqueid, true, zz.getValue()));
                     used = true;
+                } else if (zz != null) {
+                    c.getSession().write(MTSCSPacket.changePetFlag(uniqueid, true, zz.getValue()));
+                    c.getPlayer().dropMessage(5, "宠物已拥有此能力，无需重复使用。");
                 }
                 break;
             }
@@ -2800,10 +2806,9 @@ public class InventoryHandler {
                 if (mapitem.getItem().getQuantity() >= 50 && mapitem.getItemId() == 2340000) {
                     c.setMonitored(true); //hack check
                 }
-                MapleInventoryManipulator.pet_addFromDrop(c, mapitem.getItem(), true, mapitem.getDropper() instanceof MapleMonster);
-
-                // MapleInventoryManipulator.addFromDrop(c, mapitem.getItem(), true, mapitem.getDropper() instanceof MapleMonster);
-                removeItem_Pet(chr, mapitem, petz);
+                if (MapleInventoryManipulator.addFromDrop(c, mapitem.getItem(), true, mapitem.getDropper() instanceof MapleMonster)) {
+                    removeItem_Pet(chr, mapitem, petz);
+                }
             }
         } finally {
             //   lock.unlock();

@@ -46,13 +46,12 @@ public class MaplePet implements Serializable {
         ITEM_PICKUP(0x01, 5190000, 5191000),
         EXPAND_PICKUP(0x02, 5190002, 5191002), //idk
         AUTO_PICKUP(0x04, 5190003, 5191003), //idk
-        UNPICKABLE(0x08, 5190005, -1), //not coded
+        UNPICKABLE(0x08, 5190005, -1), // client-managed ignore list
         LEFTOVER_PICKUP(0x10, 5190004, 5191004), //idk
         HP_CHARGE(0x20, 5190001, 5191001),
         MP_CHARGE(0x40, 5190006, -1),
-        PET_BUFF(0x80, -1, -1), //idk
-        PET_DRAW(0x100, 5190007, -1), //nfs
-        PET_DIALOGUE(0x200, 5190008, -1); //nfs
+        PET_RECALL(0x80, 5190007, -1),
+        PET_AUTO_SPEAKING(0x100, 5190008, -1);
 
         private final int i, item, remove;
 
@@ -68,6 +67,10 @@ public class MaplePet implements Serializable {
 
         public final boolean check(int flag) {
             return (flag & i) == i;
+        }
+
+        public final boolean isSupportedByClient() {
+            return item >= 0;
         }
 
         public static final PetFlag getByAddId(final int itemId) {
@@ -90,10 +93,6 @@ public class MaplePet implements Serializable {
     }
 
     private static final long serialVersionUID = 9179541993413738569L;
-    private static final int FULL_PICKUP_FLAG_MASK = PetFlag.ITEM_PICKUP.getValue()
-            | PetFlag.EXPAND_PICKUP.getValue()
-            | PetFlag.AUTO_PICKUP.getValue()
-            | PetFlag.LEFTOVER_PICKUP.getValue();
     private String name;
     private int Fh = 0, stance = 0, uniqueid, petitemid, secondsLeft = 0;
     private Vector pos;
@@ -130,9 +129,8 @@ public class MaplePet implements Serializable {
             ret.setLevel(rs.getByte("level"));
             ret.setFullness(rs.getByte("fullness"));
             ret.setSecondsLeft(rs.getInt("seconds"));
-            final short storedFlags = rs.getShort("flags");
-            ret.flags = withFullPickupFlags(storedFlags);
-            ret.changed = ret.flags != storedFlags;
+            ret.flags = rs.getShort("flags");
+            ret.changed = false;
 
             return ret;
             }
@@ -170,7 +168,7 @@ public class MaplePet implements Serializable {
         if (uniqueid <= -1) { //wah
             uniqueid = MapleInventoryIdentifier.getInstance();
         } 
-        short ret1 = withFullPickupFlags(MapleItemInformationProvider.getInstance().getPetFlagInfo(itemid));
+        short ret1 = MapleItemInformationProvider.getInstance().getPetFlagInfo(itemid);
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement pse = con.prepareStatement("INSERT INTO pets (petid, name, level, closeness, fullness, seconds, flags) VALUES (?, ?, ?, ?, ?, ?, ?)")) { // Commit to db first
             pse.setInt(1, uniqueid);
@@ -263,8 +261,14 @@ public class MaplePet implements Serializable {
         return flags;
     }
 
-    static short withFullPickupFlags(final int existingFlags) {
-        return (short) (existingFlags | FULL_PICKUP_FLAG_MASK);
+    public final short getClientFlags() {
+        int clientFlags = 0;
+        for (PetFlag flag : PetFlag.values()) {
+            if (flag.isSupportedByClient() && flag.check(flags)) {
+                clientFlags |= flag.getValue();
+            }
+        }
+        return (short) clientFlags;
     }
 
     public final void setFlags(final int fffh) {

@@ -54,6 +54,14 @@ public class MaplePacketLittleEndianWriter extends GenericLittleEndianWriter {
         return new ByteArrayMaplePacket(baos.toByteArray());
     }
 
+    public final int size() {
+        return baos.size();
+    }
+
+    public final byte[] toByteArray() {
+        return baos.toByteArray();
+    }
+
     /**
      * Changes this packet into a human-readable hexadecimal stream of bytes.
      *

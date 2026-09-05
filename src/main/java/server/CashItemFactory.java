@@ -1,5 +1,6 @@
 package server;
 
+import client.inventory.IItem;
 import com.github.mrzhqiang.maplestory.domain.DCashShopModifiedItem;
 import com.github.mrzhqiang.maplestory.domain.query.QDCashShopModifiedItem;
 import com.github.mrzhqiang.maplestory.wz.WzData;
@@ -23,6 +24,8 @@ public class CashItemFactory {
 
     private final static CashItemFactory instance = new CashItemFactory();
     private final static int[] BEST_ITEMS = new int[]{50100010, 50100010, 50100010, 50100010, 50100010};
+    // Package SNs explicitly enabled by the historical v079 CS_OPEN catalog.
+    private static final Set<Integer> HISTORICAL_CATALOG_PACKAGES = historicalCatalogPackages();
 
     private static final Map<Integer, List<CashItemInfo>> CASH_PACKAGES = new HashMap<>();
 
@@ -32,6 +35,7 @@ public class CashItemFactory {
     private final Map<Integer, List<CashItemInfo>> itemPackage = new HashMap<>();
     private final Map<Integer, CashModInfo> itemMods = new HashMap<>();
     private final Map<Integer, Integer> idLookup = new HashMap<>();
+    private final Map<Integer, List<CashItemInfo>> itemsById = new HashMap<>();
 
     public static CashItemFactory getInstance() {
         return instance;
@@ -68,6 +72,7 @@ public class CashItemFactory {
         if (sn > 0) {
             itemStats.put(sn, info);
             idLookup.put(id, sn);
+            itemsById.computeIfAbsent(id, key -> new ArrayList<CashItemInfo>()).add(info);
         }
     }
 
@@ -96,30 +101,84 @@ public class CashItemFactory {
         return stats;
     }
 
-    /* public final List<CashItemInfo> getPackageItems(int itemId) {
-         return itemPackage.get(itemId);
-     }*/
-    public static List<CashItemInfo> getPackageItems(int itemId) {
+    public CashItemInfo getHistoricalCatalogPackage(int sn) {
+        if (getModInfo(sn) != null) {
+            return null;
+        }
+        return resolveHistoricalCatalogPackage(sn, itemStats.get(sn));
+    }
+
+    public static boolean isHistoricalCatalogPackageSerial(int sn) {
+        return HISTORICAL_CATALOG_PACKAGES.contains(sn);
+    }
+
+    static CashItemInfo resolveHistoricalCatalogPackage(int sn, CashItemInfo item) {
+        if (item == null || item.getSN() != sn || !HISTORICAL_CATALOG_PACKAGES.contains(sn)
+                || getPackageSerials(item.getId()).isEmpty()) {
+            return null;
+        }
+        return item;
+    }
+
+    private static Set<Integer> historicalCatalogPackages() {
+        Set<Integer> serials = new HashSet<Integer>(Arrays.asList(
+                10001747, 10001806, 10001815, 10001818,
+                21200000, 21200001, 21200006, 21200012, 21200015,
+                70000104, 70000123, 70000125, 70000137, 70000138));
+        addRange(serials, 70000002, 70000006);
+        addRange(serials, 70000009, 70000014);
+        addRange(serials, 70000017, 70000019);
+        addRange(serials, 70000044, 70000058);
+        addRange(serials, 70000065, 70000072);
+        addRange(serials, 70000078, 70000102);
+        addRange(serials, 70000110, 70000121);
+        addRange(serials, 70000141, 70000148);
+        addRange(serials, 70000153, 70000159);
+        return Collections.unmodifiableSet(serials);
+    }
+
+    private static void addRange(Set<Integer> serials, int first, int last) {
+        for (int serial = first; serial <= last; serial++) {
+            serials.add(serial);
+        }
+    }
+
+    public List<CashItemInfo> getPackageItems(int itemId) {
         List<CashItemInfo> list = CASH_PACKAGES.get(itemId);
         if (list != null) {
             return list;
         }
 
-        List<CashItemInfo> packageItems = new ArrayList<>();
-        WzData.ETC.directory()
+        List<Integer> serials = getPackageSerials(itemId);
+        if (serials.isEmpty()) {
+            CASH_PACKAGES.put(itemId, Collections.emptyList());
+            return Collections.emptyList();
+        }
+
+        List<CashItemInfo> packageItems = new ArrayList<>(serials.size());
+        for (Integer serial : serials) {
+            CashItemInfo packageItem = itemStats.get(serial);
+            if (packageItem == null) {
+                LOGGER.warn("Cash-shop package item is missing: packageItemId={}, memberSn={}", itemId, serial);
+                CASH_PACKAGES.put(itemId, Collections.emptyList());
+                return Collections.emptyList();
+            }
+            packageItems.add(packageItem);
+        }
+        List<CashItemInfo> result = Collections.unmodifiableList(packageItems);
+        CASH_PACKAGES.put(itemId, result);
+        return result;
+    }
+
+    static List<Integer> getPackageSerials(int itemId) {
+        return WzData.ETC.directory()
                 .findFile("CashPackage.img")
                 .map(WzFile::content)
                 .map(it -> it.find(String.valueOf(itemId)))
+                .map(it -> it.find("SN"))
                 .map(WzElement::childrenStream)
-                .map(stream -> stream.flatMap(WzElement::childrenStream))
-                .ifPresent(stream -> stream.forEach(element -> {
-                    // fixme 这一段代码有问题，需要看看要不要删除
-//                    Integer sn = ((IntElement) element).value();
-                    // packageItems.add(getItem(sn));
-                    CASH_PACKAGES.put(itemId, packageItems);
-                }));
-        CASH_PACKAGES.put(itemId, packageItems);
-        return packageItems;
+                .map(stream -> stream.map(Elements::ofInt).collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
     }
 
     public final CashModInfo getModInfo(int sn) {
@@ -157,11 +216,40 @@ public class CashItemFactory {
         return sn == null ? 0 : sn;
     }
 
+    public int getSnFromItem(IItem item) {
+        List<CashItemInfo> candidates = itemsById.get(item.getItemId());
+        if (candidates == null) {
+            return 0;
+        }
+
+        List<CashItemInfo> effectiveCandidates = new ArrayList<CashItemInfo>(candidates.size());
+        for (CashItemInfo candidate : candidates) {
+            CashItemInfo effective = getItem(candidate.getSN());
+            effectiveCandidates.add(effective == null ? candidate : effective);
+        }
+        CashItemInfo match = findMatchingCashItem(item, effectiveCandidates);
+        return match == null ? 0 : match.getSN();
+    }
+
+    static CashItemInfo findMatchingCashItem(IItem item, List<CashItemInfo> candidates) {
+        boolean itemExpires = item.getExpiration() > 0;
+        for (CashItemInfo candidate : candidates) {
+            if (candidate.getId() == item.getItemId()
+                    && candidate.getCount() == item.getQuantity()
+                    && (CashShop.cashItemDurationMillis(candidate) > 0) == itemExpires) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
     public final void clearCashShop() {
         itemStats.clear();
         itemPackage.clear();
         itemMods.clear();
         idLookup.clear();
+        itemsById.clear();
+        CASH_PACKAGES.clear();
         initialized = false;
         initialize();
     }

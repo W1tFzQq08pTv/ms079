@@ -64,6 +64,7 @@ public class PetHandler {
         byte slot = slea.readByte();
         slea.readByte();
         chr.spawnPet(slot, slea.readByte() > 0);
+        chr.syncPetFlagsAfterMapReady();
 
     }
 
@@ -222,6 +223,7 @@ public class PetHandler {
     }
 
     public static final void MovePet(final SeekableLittleEndianAccessor slea, final MapleCharacter chr) {
+        chr.syncPetFlagsAfterMapReady();
         final int petId = slea.readInt();
         slea.skip(8);
         final List<LifeMovementFragment> res = MovementParse.parseMovement(slea, 3);
