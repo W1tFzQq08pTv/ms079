@@ -20,15 +20,25 @@
 
 ## 仓库中的客户端辅助脚本
 
-### `launch-client.bat`
+### `launch-client.vbs`
 
-该批处理在当前目录调用：
+这是推荐的客户端启动入口。它通过 Windows Script Host 在后台调用：
 
 ```text
 ms079-launch-guard.ps1
 ```
 
-它本身不包含客户端，也不下载客户端文件。使用时通常需要把相关 BAT 和 PowerShell 脚本放在包含 `MapleStory079.exe` 的客户端目录中。
+启动过程不会创建可见的终端窗口；如果守护脚本启动失败，则通过消息框显示错误。它本身不包含客户端，也不下载客户端文件。通常把 VBS 和 PowerShell 脚本放在包含 `MapleStory079.exe` 的客户端目录中，并让桌面快捷方式直接指向 `launch-client.vbs`。
+
+如果客户端目录只读，也可以把 VBS 放在当前用户可写目录中，并将守护脚本路径作为第一个参数传入：
+
+```text
+wscript.exe //NoLogo "path\to\launch-client.vbs" "client\ms079-launch-guard.ps1"
+```
+
+### `launch-client.bat`
+
+该批处理保留为兼容入口，异步转交给 `launch-client.vbs` 后立即退出。直接双击 BAT 时终端可能短暂闪现；要完全避免终端出现，应使用 VBS 入口或指向该入口的快捷方式。
 
 ### `ms079-launch-guard.ps1`
 
@@ -44,7 +54,7 @@ ms079-launch-guard.ps1
 - 客户端持续无响应达到 150 秒后强制停止；
 - 强制停止时恢复显示模式。
 
-仓库还存在 `ms079-launch-guard.ps1`；当前它与 `ms079-launch-guard.ps1` 内容完全相同，但 `launch-client.bat` 实际调用的是后者。维护时应先决定是否继续保留两个副本，并避免只修改其中一个造成行为分叉。
+该脚本需要在客户端存活期间持续运行，以处理紧急停止热键和无响应检测。无窗口入口只隐藏其宿主窗口，不会缩短守护脚本的生命周期。
 
 ### `stop-client.bat`
 
